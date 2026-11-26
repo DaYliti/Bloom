@@ -43,17 +43,17 @@
   /* ---------- Кнопка-контейнер ---------- */
   #open-btn {
     position: relative;
-    width: 200px; /* Чуть шире, чтобы влезло Opening... */
+    width: 190px;
     height: 55px;
     border-radius: 18px;
     border: 1px solid rgba(255,255,255,.3);
-    background: transparent; /* Фон полностью прозрачный */
+    background: transparent;
     backdrop-filter: blur(4px);
     transform: translateY(38px); 
     cursor: default; 
     overflow: hidden; 
     display: flex;
-    justify-content: center; /* Центрируем текст */
+    justify-content: center;
     align-items: center;
     transition: border-color 4s linear;
   }
@@ -66,36 +66,37 @@
     width: 100%;
     height: 0%; 
     background: #ff6b9e;
-    opacity: 0; /* Изначально вода невидима */
+    opacity: 0;
     transition: height 4s linear, opacity 0.3s ease;
     z-index: 1;
   }
 
-  /* Неровная кромка воды (волна) */
+  /* Аккуратная волна */
   .liquid::before {
     content: '';
     position: absolute;
-    top: -8px;
-    left: -5%;
-    width: 110%;
-    height: 16px;
+    top: -6px;
+    left: -10%;
+    width: 120%;
+    height: 12px;
     background: #ff6b9e;
-    border-radius: 40% 60% 30% 70% / 50% 40% 60% 50%;
-    animation: wobble 2s infinite alternate ease-in-out;
+    border-radius: 50%;
+    animation: wobble 2.5s infinite alternate ease-in-out;
   }
 
   @keyframes wobble {
-    0% { transform: translateX(-3%) rotate(-1deg); }
-    100% { transform: translateX(3%) rotate(1deg); }
+    0% { transform: translateX(-3%); }
+    100% { transform: translateX(3%); }
   }
 
-  /* Обертка для текста */
+  /* Обертка для текста (идеально центрируется благодаря flex) */
   .text-wrapper {
     position: relative;
     z-index: 2;
     display: flex;
     align-items: center;
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    justify-content: center;
+    pointer-events: none;
   }
 
   .text-open, .text-typing {
@@ -104,19 +105,16 @@
     text-transform: uppercase;
     color: #fff;
     text-shadow: 0 1px 4px rgba(0,0,0,0.4);
-    /* Убираем лишний отступ справа от последней буквы для идеального центрирования */
-    margin-right: -0.4em; 
   }
 
+  /* Текст, который печатается */
   .text-typing {
-    letter-spacing: .1em; /* Уменьшаем отступ для букв ing и точек */
-    margin-left: 0.2em;
     width: 0;
     overflow: hidden;
     white-space: nowrap;
-    text-align: left;
-    margin-right: 0;
+    transition: width 0.3s ease;
     display: inline-block;
+    text-align: left;
   }
 
   /* Состояние при наведении */
@@ -129,14 +127,9 @@
     opacity: 1; 
   }
 
-  /* Сдвигаем текст влево при наведении */
-  #open-btn.filling .text-wrapper {
-    transform: translateX(-35px);
-  }
-
-  /* Фикс ширины для печатающегося текста, чтобы кнопка не дергалась */
+  /* Расширяем контейнер для текста, заставляя "Open" отъехать влево */
   #open-btn.filling .text-typing {
-    width: 70px; /* Достаточно места для ing... */
+    width: 80px; /* Место для "ing..." */
   }
 
   /* ---------- Лепестки сакуры ---------- */
@@ -232,8 +225,7 @@
   <div id="open-btn">
     <div class="liquid"></div>
     <div class="text-wrapper">
-      <span class="text-open">Open</span>
-      <span class="text-typing"></span>
+      <span class="text-open">Open</span><span class="text-typing"></span>
     </div>
   </div>
 </div>
@@ -301,11 +293,9 @@
   let isAnimating = false;
   let typingTimeout = null;
 
-  // Логика печатной машинки
   function startTyping() {
     clearTimeout(typingTimeout);
     textTyping.textContent = "";
-    
     const fullText = "ing...";
     let charIndex = 0;
 
@@ -314,11 +304,11 @@
         textTyping.textContent += fullText[charIndex];
         charIndex++;
         
-        // Буквы печатаются быстрее, точки медленнее
-        let delay = (charIndex > 3) ? 250 : 120; 
+        // Буквы печатаются быстро (100мс), а точки медленно (300мс)
+        let delay = (charIndex > 3) ? 300 : 100; 
         typingTimeout = setTimeout(typeChar, delay);
       } else {
-        // Когда все точки напечатаны, ждем и начинаем печатать точки заново
+        // Когда напечатаны все точки, ждем и начинаем печатать их заново
         typingTimeout = setTimeout(() => {
           textTyping.textContent = "ing"; 
           charIndex = 3; 
@@ -329,13 +319,12 @@
     typeChar();
   }
 
-  // Остановка печати и сброс текста
   function stopTyping() {
     clearTimeout(typingTimeout);
     textTyping.textContent = "";
   }
 
-  const FILL_DURATION = 4000; // 4 секунды на заполнение
+  const FILL_DURATION = 4000; // 4 секунды
 
   openBtn.addEventListener('mouseenter', () => {
     if (isAnimating) return;
@@ -344,12 +333,10 @@
     const btnX = rect.left + rect.width / 2;
     const btnY = rect.top + rect.height / 2;
 
-    // 1. Начинаем наливать воду и сдвигать текст
     openBtn.classList.add('filling');
-    // 2. Запускаем печать
     startTyping();
 
-    // 3. Ждем ровно 4 секунды
+    // Таймер ровно на 4 секунды (без задержек)
     fillTimeout = setTimeout(() => {
       isAnimating = true;
       
@@ -363,7 +350,6 @@
 
   openBtn.addEventListener('mouseleave', () => {
     if (isAnimating) return;
-    // Если убрали мышку, вода стекает, текст возвращается на место
     openBtn.classList.remove('filling');
     stopTyping();
     clearTimeout(fillTimeout);
