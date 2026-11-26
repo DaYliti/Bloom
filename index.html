@@ -8,7 +8,6 @@
   :root{
     --fg:#f6ebef;
     --dim:#8d7c86;
-    --accent:#ff6f9c;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;height:100%;background:#000;}
@@ -19,21 +18,20 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* Контейнер для видео на заднем фоне */
+  /* Видео на фоне */
   #video-bg {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Чтобы видео заполняло весь экран */
+    object-fit: contain; /* Сохраняет пропорции, не растягивает */
     z-index: 1;
     transition: opacity 2s ease;
   }
   
-  /* Когда сайт открыт (кнопка Open нажата), видео становится полупрозрачным */
-  body.opened #video-bg { opacity: 0.18; }
+  body.opened #video-bg { opacity: 0.15; }
 
-  /* ---------- Кнопка Open ---------- */
+  /* ---------- Контейнер для кнопки ---------- */
   #ui{
     position:fixed; inset:0;
     display:grid; place-items:center;
@@ -43,12 +41,14 @@
   }
   #ui.show{ opacity:1; pointer-events:auto; }
 
+  /* ---------- Кнопка Open ---------- */
   #open{
     appearance:none;
     background:rgba(255,255,255,.02);
     color:rgba(255,255,255,.85);
     border:1px solid rgba(255,255,255,.3);
-    border-radius:8px; /* Вот тут мы делаем ее прямоугольной с легким скруглением */
+    border-radius:18px; /* Средняя форма между овалом и прямоугольником */
+    transform: translateY(38px); /* Опускаем кнопку на ~1 см вниз */
     padding:16px 50px;
     font:inherit;
     font-size:13px;
@@ -62,14 +62,35 @@
   
   #open:hover, #open:focus-visible{
     outline:none;
-    color:#000; /* Текст станет черным при наведении для контраста */
-    background:rgba(255,255,255,.95); /* Кнопка зальется белым */
+    color:#000;
+    background:rgba(255,255,255,.95);
     border-color:#fff;
-    letter-spacing:.45em; /* Текст чуть расширится */
+    letter-spacing:.45em;
+    transform: translateY(38px) scale(1.03); /* Чуть увеличивается при наведении */
     box-shadow:0 0 30px rgba(255,255,255,.3);
   }
 
-  /* ---------- Био ---------- */
+  /* ---------- Лепестки сакуры ---------- */
+  #petals-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10; /* Поверх всего, чтобы лепестки красиво разлетались */
+    overflow: hidden;
+  }
+  .petal {
+    position: absolute;
+    /* Красивый розовый градиент для лепестка */
+    background: linear-gradient(135deg, #ffb7c5, #ff6b9e);
+    /* Форма лепестка сакуры (закругленные углы с одной стороны) */
+    border-radius: 15px 2px 15px 2px;
+    opacity: 1;
+    box-shadow: 0 0 5px rgba(255, 107, 158, 0.4);
+    /* Начальная позиция (центр кнопки) */
+    transform: translate(-50%, -50%) scale(var(--scale)) rotate(0deg);
+  }
+
+  /* ---------- Био страница ---------- */
   #bio{
     position:fixed; inset:0;
     display:grid; place-items:center;
@@ -121,21 +142,22 @@
   nav a:hover{
     opacity:1;
     color:#fff;
-    border-bottom-color:var(--accent);
-    text-shadow:0 0 20px rgba(255,110,150,.7);
+    border-bottom-color:#fff;
+    text-shadow:0 0 20px rgba(255,255,255,.7);
   }
 </style>
 </head>
 <body>
 
-<!-- Твое видео. Атрибуты autoplay и muted нужны для автоматического запуска -->
 <video id="video-bg" src="Intro.mp4" autoplay muted playsinline></video>
 
 <div id="ui"><button id="open">Open</button></div>
 
+<!-- Контейнер для лепестков -->
+<div id="petals-container"></div>
+
 <main id="bio">
   <div class="inner">
-    <!-- ТУТ МОЖЕШЬ ПОМЕНЯТЬ ИМЯ И ССЫЛКИ -->
     <h1>имя</h1>
     <p class="tag">let it bloom</p>
     <nav>
@@ -150,19 +172,81 @@
   const video = document.getElementById('video-bg');
   const ui = document.getElementById('ui');
   const openBtn = document.getElementById('open');
+  const petalsContainer = document.getElementById('petals-container');
 
-  // Когда видео доиграет до конца (10 секунд), появляется кнопка Open
+  // Показываем кнопку после окончания видео
   video.addEventListener('ended', () => {
     ui.classList.add('show');
   });
 
-  // Когда пользователь нажимает Open:
+  // Функция для создания лепестков
+  function spawnPetals(x, y) {
+    const petalCount = 45; // Количество лепестков
+
+    for (let i = 0; i < petalCount; i++) {
+      const petal = document.createElement('div');
+      petal.classList.add('petal');
+
+      // Случайный размер
+      const size = Math.random() * 12 + 8; // от 8 до 20 px
+      petal.style.width = `${size}px`;
+      petal.style.height = `${size}px`;
+
+      // Начальная позиция — центр кнопки
+      petal.style.left = `${x}px`;
+      petal.style.top = `${y}px`;
+
+      // Случайный угол и дистанция разлета (до краев экрана)
+      const angle = Math.random() * Math.PI * 2;
+      const distance = Math.random() * (Math.max(window.innerWidth, window.innerHeight) * 0.6) + 150;
+      const tx = Math.cos(angle) * distance;
+      const ty = Math.sin(angle) * distance;
+
+      // Случайный поворот и масштаб для естественности
+      const rot = Math.random() * 720 - 360;
+      const scale = Math.random() * 0.6 + 0.4;
+
+      // Передаем значения в CSS-переменные
+      petal.style.setProperty('--scale', scale);
+
+      petalsContainer.appendChild(petal);
+
+      // Запускаем анимацию на следующем кадре (чтобы браузер применил начальные стили)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Плавно двигаем к краям и растворяем
+          petal.style.transition = `transform 2.5s cubic-bezier(0.15, 0.8, 0.3, 1), opacity 2.5s ease-in`;
+          petal.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(${scale}) rotate(${rot}deg)`;
+          petal.style.opacity = '0'; // Лепесток испаряется
+        });
+      });
+
+      // Удаляем из DOM через 2.6 секунды, чтобы не засорять память
+      setTimeout(() => {
+        petal.remove();
+      }, 2600);
+    }
+  }
+
+  // Обработка клика по кнопке
   openBtn.addEventListener('click', () => {
-    // Включаем класс opened (видео тускнеет, появляется био)
-    document.body.classList.add('opened');
-    // Прячем кнопку
+    // 1. Получаем координаты центра кнопки
+    const rect = openBtn.getBoundingClientRect();
+    const btnX = rect.left + rect.width / 2;
+    const btnY = rect.top + rect.height / 2;
+
+    // 2. Запускаем лепестки
+    spawnPetals(btnX, btnY);
+
+    // 3. Убираем кнопку
     ui.classList.remove('show');
-    setTimeout(() => { ui.style.display = 'none'; }, 1500);
+    setTimeout(() => { ui.style.display = 'none'; }, 400);
+
+    // 4. Включаем режим открытого сайта (текст начинает появляться)
+    // Задержку в 200мс делаем, чтобы лепестки успели вылететь чуть раньше текста
+    setTimeout(() => {
+      document.body.classList.add('opened');
+    }, 200);
   });
 </script>
 </body>
