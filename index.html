@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@DaYliti</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <title>bloom()</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body, html {
             width: 100%; height: 100%;
-            background-color: #050505;
-            color: #e0e0e0;
-            font-family: 'Inter', sans-serif;
+            background-color: #030303;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
             overflow: hidden;
-            cursor: none; /* Кастомный курсор */
+            cursor: crosshair;
         }
 
         /* --- ИНТРО --- */
@@ -26,375 +25,359 @@
             display: flex; justify-content: center; align-items: center;
             transition: opacity 1.5s ease;
         }
-        #intro-video {
-            width: 100%; height: 100%; object-fit: contain;
-        }
+        #intro-video { width: 100%; height: 100%; object-fit: contain; }
         #enter-btn {
             position: absolute; bottom: 15%;
-            padding: 12px 40px;
+            padding: 15px 50px;
             background: transparent;
-            color: #fff; font-family: 'JetBrains Mono', monospace;
-            font-size: 14px; letter-spacing: 0.4em;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 4px;
-            cursor: none; opacity: 0; pointer-events: none;
+            color: #ff6b9e; font-family: 'JetBrains Mono', monospace;
+            font-size: 14px; letter-spacing: 0.5em;
+            border: 1px solid rgba(255,107,158,0.3);
+            border-radius: 2px;
+            cursor: crosshair; opacity: 0; pointer-events: none;
             transition: all 0.4s ease;
             text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(255,107,158,0);
         }
         #enter-btn.show { opacity: 1; pointer-events: auto; }
         #enter-btn:hover {
-            background: #fff; color: #000;
-            box-shadow: 0 0 30px rgba(255,255,255,0.4);
+            background: #ff6b9e; color: #000;
+            box-shadow: 0 0 40px rgba(255,107,158,0.6);
+            border-color: #ff6b9e;
         }
 
-        /* --- ФОН (Canvas Лепестки) --- */
-        #sakura-canvas {
+        /* --- ФОН (Canvas) --- */
+        #bg-canvas {
             position: fixed; inset: 0; z-index: 1; pointer-events: none;
         }
 
-        /* --- ГЛАВНЫЙ ЭКРАН --- */
-        #main-ui {
-            position: relative; z-index: 10;
-            width: 100%; height: 100%;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; transition: opacity 2s ease;
+        /* --- ЦЕНТРАЛЬНОЕ ЯДРО (Семя) --- */
+        #core-seed {
+            position: fixed; top: 50%; left: 50%;
+            width: 20px; height: 20px;
+            background: #ff6b9e;
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 10;
+            cursor: pointer;
+            box-shadow: 0 0 30px #ff6b9e, 0 0 60px #ff6b9e;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s;
             pointer-events: none;
         }
-        body.site-opened #main-ui { opacity: 1; pointer-events: auto; }
-        body.site-opened #intro-screen { opacity: 0; pointer-events: none; }
-
-        /* Стеклянная карточка */
-        .glass-panel {
-            width: 90%; max-width: 800px;
-            background: rgba(15, 15, 15, 0.6);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            transform: translateY(20px);
-            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        body.site-opened .glass-panel { transform: translateY(0); }
-
-        /* Левая и правая колонки */
-        .column { display: flex; flex-direction: column; gap: 20px; }
         
-        .profile-header { text-align: left; }
-        h1 { font-size: 2.2rem; color: #fff; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 5px; }
-        .subtitle { font-family: 'JetBrains Mono', monospace; color: #ff6b9e; font-size: 0.85rem; letter-spacing: 2px; }
-        .bio-text { font-size: 0.9rem; color: #888; line-height: 1.6; margin-top: 15px; }
-
-        /* Заголовки блоков */
-        .section-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem; color: #555; text-transform: uppercase;
-            letter-spacing: 2px; margin-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;
+        body.site-opened #core-seed {
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: auto;
+            animation: pulse 2s infinite alternate;
         }
 
-        /* Таймеры */
-        .timer-box {
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px #ff6b9e, 0 0 40px #ff6b9e; }
+            100% { box-shadow: 0 0 40px #ff6b9e, 0 0 80px #ff6b9e; }
+        }
+
+        /* --- ОРБИТАЛЬНАЯ СИСТЕМА --- */
+        #orbit-system {
+            position: fixed; top: 50%; left: 50%;
+            width: 0; height: 0;
+            z-index: 5;
+            opacity: 0; transition: opacity 1s ease;
+        }
+        body.bloomed #orbit-system { opacity: 1; }
+        body.bloomed #core-seed { transform: translate(-50%, -50%) scale(0); opacity: 0; pointer-events: none; }
+
+        .node {
+            position: absolute;
+            top: 0; left: 0;
+            width: 60px; height: 60px;
+            margin: -30px 0 0 -30px;
             background: rgba(255,255,255,0.03);
-            border-radius: 10px; padding: 15px;
-            border: 1px solid rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 11px; letter-spacing: 1px; color: #aaa;
+            cursor: crosshair;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
-        .timer-item { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #aaa; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .timer-item:last-child { margin-bottom: 0; }
-        .timer-val { color: #fff; }
 
-        /* Кот */
-        .cat-container { position: relative; overflow: hidden; border-radius: 10px; cursor: none; }
-        .cat-img { width: 100%; height: 140px; object-fit: cover; filter: grayscale(40%); transition: 0.4s; display: block; }
-        .cat-container:hover .cat-img { filter: grayscale(0%); transform: scale(1.05); }
-        .meow-text { position: absolute; color: #ff6b9e; font-family: 'JetBrains Mono', monospace; font-weight: bold; pointer-events: none; animation: meowFade 0.8s ease-out forwards; text-shadow: 0 0 10px #000; }
-        
-        /* Соцсети */
-        .socials { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .social-btn {
-            display: flex; align-items: center; justify-content: center;
-            padding: 12px; background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
-            color: #aaa; text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
-            transition: 0.3s; cursor: none;
+        .node:hover {
+            border-color: #ff6b9e;
+            color: #fff;
+            background: rgba(255,107,158,0.1);
+            box-shadow: 0 0 20px rgba(255,107,158,0.4);
+            transform: scale(1.1);
         }
-        .social-btn:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: #ff6b9e; box-shadow: 0 0 15px rgba(255,107,158,0.2); }
 
-        /* Секретная кнопка */
-        .secret-trigger { position: absolute; bottom: 15px; right: 20px; width: 10px; height: 10px; background: #111; border-radius: 50%; cursor: none; transition: 0.3s; }
-        .secret-trigger:hover { background: #ff0000; box-shadow: 0 0 15px #ff0000; }
-
-        /* --- КАСТОМНЫЙ КУРСОР --- */
-        #cursor { position: fixed; top: 0; left: 0; width: 8px; height: 8px; background: #fff; border-radius: 50%; pointer-events: none; z-index: 100000; transform: translate(-50%, -50%); transition: width 0.2s, height 0.2s, background 0.2s; mix-blend-mode: difference; }
-        #cursor.hover { width: 40px; height: 40px; background: #ff6b9e; }
-
-        @keyframes meowFade { 0% { opacity: 0; transform: scale(0.5) translateY(0); } 20% { opacity: 1; transform: scale(1.2) translateY(-10px); } 100% { opacity: 0; transform: scale(1) translateY(-30px); } }
-
-        /* Хакерский режим */
-        body.hacker-mode { background: #000; }
-        body.hacker-mode .glass-panel { border-color: #f00; box-shadow: 0 0 40px rgba(255,0,0,0.2); }
-        body.hacker-mode h1, body.hacker-mode .timer-val, body.hacker-mode .subtitle { color: #f00; text-shadow: 0 0 10px #f00; }
-        #hacker-canvas { position: fixed; inset: 0; z-index: 2; opacity: 0; pointer-events: none; transition: 0.5s; }
-        body.hacker-mode #hacker-canvas { opacity: 0.3; }
-
-        @media (max-width: 768px) {
-            .glass-panel { grid-template-columns: 1fr; padding: 25px; gap: 25px; height: 90%; overflow-y: auto; }
-            body, html { cursor: auto; }
-            #cursor { display: none; }
-            #enter-btn { bottom: 10%; }
+        /* Инфо-панель при клике на узел */
+        #info-panel {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            width: 400px; max-width: 90%;
+            background: rgba(10,10,10,0.9);
+            border: 1px solid rgba(255,107,158,0.3);
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            z-index: 20;
+            opacity: 0; pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
+        #info-panel.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+        #info-panel h2 { color: #ff6b9e; font-size: 1.2rem; margin-bottom: 15px; letter-spacing: 2px;}
+        #info-panel p { color: #ccc; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;}
+        #close-info { background: none; border: 1px solid #555; color: #888; padding: 8px 20px; cursor: pointer; font-family: inherit; font-size: 0.8rem; transition: 0.3s;}
+        #close-info:hover { border-color: #fff; color: #fff; }
+
+        /* --- ПИКСЕЛЬНЫЙ КОТ (Пасхалка) --- */
+        #pixel-cat {
+            position: fixed; bottom: 20px; right: 20px;
+            color: #555; font-size: 12px; line-height: 1.2;
+            white-space: pre; z-index: 50; cursor: crosshair;
+            transition: color 0.3s, transform 0.3s;
+        }
+        #pixel-cat:hover { color: #ff6b9e; transform: scale(1.1); }
+
+        /* --- АУДИО ПЛЕЕР (Заглушка) --- */
+        #audio-widget {
+            position: fixed; bottom: 20px; left: 20px;
+            display: flex; align-items: center; gap: 15px;
+            z-index: 50; opacity: 0.6; transition: opacity 0.3s;
+        }
+        #audio-widget:hover { opacity: 1; }
+        .bars { display: flex; gap: 3px; height: 20px; align-items: flex-end; }
+        .bar { width: 3px; background: #ff6b9e; height: 5px; }
+        .track-info { font-size: 10px; color: #888; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-    <!-- ЭКРАН 1: Интро -->
+    <!-- ИНТРО -->
     <div id="intro-screen">
         <video id="intro-video" src="Intro.mp4" autoplay muted playsinline></video>
-        <button id="enter-btn">Enter</button>
+        <button id="enter-btn">Enter Void</button>
     </div>
 
-    <!-- ФОН: Лепестки -->
-    <canvas id="sakura-canvas"></canvas>
-    <canvas id="hacker-canvas"></canvas>
+    <canvas id="bg-canvas"></canvas>
 
-    <!-- ЭКРАН 2: Основной сайт -->
-    <div id="main-ui">
-        <div class="glass-panel">
-            
-            <!-- ЛЕВАЯ КОЛОНКА -->
-            <div class="column">
-                <div class="profile-header">
-                    <div class="subtitle">@DaYliti</div>
-                    <h1>Ворсинка</h1>
-                    <div class="bio-text">
-                        Привет, я Денис. Мне 16. Здесь собрано всё, что мне дорого: музыка, игры, мои соцсети и самые близкие люди.
-                    </div>
-                </div>
+    <!-- Семя в центре -->
+    <div id="core-seed"></div>
 
-                <div>
-                    <div class="section-title">My relationship</div>
-                    <div class="timer-box">
-                        <div class="timer-item">Знакомы: <span class="timer-val" id="timer-know">...</span></div>
-                        <div class="timer-item">В отношениях: <span class="timer-val" id="timer-love">...</span></div>
-                    </div>
-                </div>
+    <!-- Орбитальные узлы -->
+    <div id="orbit-system">
+        <div class="node" style="transform: translate(150px, 0);" onclick="showInfo('me')">INFO</div>
+        <div class="node" style="transform: translate(-150px, 0);" onclick="showInfo('tg')">TG</div>
+        <div class="node" style="transform: translate(0, 150px);" onclick="showInfo('dc')">DC</div>
+        <div class="node" style="transform: translate(0, -150px);" onclick="showInfo('games')">GAMES</div>
+        <div class="node" style="transform: translate(106px, -106px);" onclick="showInfo('steam')">STEAM</div>
+        <div class="node" style="transform: translate(-106px, 106px);" onclick="showInfo('tiktok')">TT</div>
+    </div>
 
-                <div>
-                    <div class="section-title">My cat (Сёма)</div>
-                    <div class="cat-container" onclick="triggerMeow(this)">
-                        <img src="https://i.postimg.cc/G275ccP3/zimo.jpg" class="cat-img" alt="Сёма">
-                    </div>
-                </div>
-            </div>
+    <!-- Окно информации -->
+    <div id="info-panel">
+        <h2 id="info-title">Title</h2>
+        <p id="info-desc">Description</p>
+        <button id="close-info" onclick="closeInfo()">[ CLOSE ]</button>
+    </div>
 
-            <!-- ПРАВАЯ КОЛОНКА -->
-            <div class="column">
-                <div>
-                    <div class="section-title">Social Networks</div>
-                    <div class="socials">
-                        <a href="https://t.me/DaYliti" target="_blank" class="social-btn">Telegram</a>
-                        <a href="javascript:void(0)" onclick="copyDiscord(this)" class="social-btn">Discord</a>
-                        <a href="https://www.tiktok.com/@dayliti" target="_blank" class="social-btn">TikTok</a>
-                        <a href="https://steamcommunity.com/profiles/76561199741654298/" target="_blank" class="social-btn">Steam</a>
-                    </div>
-                </div>
+    <!-- Пиксельный кот -->
+    <div id="pixel-cat" onmouseenter="catMeow(this)" onmouseleave="catIdle(this)">
+/\_/\
+( o.o )
+ > ^ <
+    </div>
 
-                <div>
-                    <div class="section-title">Currently Vibing To</div>
-                    <div class="timer-box" style="text-align: center; padding: 25px;">
-                        <!-- СЮДА ВСТАВИШЬ СВОЮ НОВУЮ МУЗЫКУ -->
-                        <div style="font-family: 'JetBrains Mono'; color: #fff; font-size: 0.9rem; margin-bottom: 5px;">TBD (Твой трек)</div>
-                        <div style="font-family: 'JetBrains Mono'; color: #666; font-size: 0.75rem;">Исполнитель</div>
-                        <div style="margin-top: 15px; color: #ff6b9e; font-size: 0.75rem; opacity: 0.7;">(Плеер в разработке)</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- СЕКРЕТНАЯ КНОПКА -->
-            <div class="secret-trigger" onclick="toggleHackerMode()" title="???"></div>
-
+    <!-- Аудио виджет -->
+    <div id="audio-widget">
+        <div class="bars">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
         </div>
+        <div class="track-info">MUSIC OFFLINE</div>
     </div>
-
-    <!-- Кастомный курсор -->
-    <div id="cursor"></div>
 
     <script>
-        /* 1. ИНТРО И ПЕРЕХОД НА САЙТ */
+        /* 1. ЛОГИКА ИНТРО */
         const video = document.getElementById('intro-video');
         const enterBtn = document.getElementById('enter-btn');
         
-        // Когда видео заканчивается, показываем кнопку
-        video.addEventListener('ended', () => {
-            enterBtn.classList.add('show');
-        });
-
-        // Если видео не загрузилось или затянулось, показываем кнопку через 11 секунд
-        setTimeout(() => { enterBtn.classList.add('show'); }, 11000);
+        video.addEventListener('ended', () => enterBtn.classList.add('show'));
+        setTimeout(() => enterBtn.classList.add('show'), 11000);
 
         enterBtn.addEventListener('click', () => {
             document.body.classList.add('site-opened');
             setTimeout(() => {
                 document.getElementById('intro-screen').style.display = 'none';
+                // Запускаем анимацию лепестков только после закрытия интро
+                initParticles();
             }, 1500);
         });
 
-        /* 2. ЛЕПЕСТКИ САКУРЫ (Canvas) */
-        const canvas = document.getElementById('sakura-canvas');
+        /* 2. ИНТЕРАКТИВНЫЕ ЛЕПЕСТКИ НА CANVAS */
+        const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
         let width, height;
+        let particles = [];
+        let mouse = { x: -1000, y: -1000 };
 
-        function resize() {
+        function initParticles() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        const petals = [];
-        const petalCount = 40;
-
-        class Petal {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * height - height;
-                this.size = Math.random() * 8 + 4;
-                this.speedY = Math.random() * 1.5 + 0.5;
-                this.speedX = Math.random() * 1 - 0.5;
-                this.rotation = Math.random() * 360;
-                this.rotSpeed = Math.random() * 2 - 1;
-                this.opacity = Math.random() * 0.5 + 0.2;
+            
+            particles = [];
+            for(let i = 0; i < 100; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 3 + 1,
+                    speedX: Math.random() * 1 - 0.5,
+                    speedY: Math.random() * -1 - 0.5,
+                    color: `rgba(255, 107, 158, ${Math.random() * 0.5 + 0.1})`
+                });
             }
-            update() {
-                this.y += this.speedY;
-                this.x += Math.sin(this.y * 0.01) * 0.5 + this.speedX;
-                this.rotation += this.rotSpeed;
-                if (this.y > height + 20) {
-                    this.y = -20;
-                    this.x = Math.random() * width;
-                }
-            }
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation * Math.PI / 180);
-                ctx.beginPath();
-                ctx.ellipse(0, 0, this.size, this.size/2, 0, 0, Math.PI*2);
-                ctx.fillStyle = `rgba(255, 107, 158, ${this.opacity})`;
-                ctx.fill();
-                ctx.restore();
-            }
+            animate();
         }
 
-        for (let i = 0; i < petalCount; i++) petals.push(new Petal());
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
-            petals.forEach(p => { p.update(); p.draw(); });
+            
+            particles.forEach(p => {
+                // Движение
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                // Отталкивание от мыши
+                let dx = mouse.x - p.x;
+                let dy = mouse.y - p.y;
+                let dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 150) {
+                    p.x -= dx * 0.02;
+                    p.y -= dy * 0.02;
+                }
+
+                // Респавн
+                if(p.y < -10 || p.x < -10 || p.x > width + 10) {
+                    p.y = height + 10;
+                    p.x = Math.random() * width;
+                }
+
+                // Рисование
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
             requestAnimationFrame(animate);
         }
-        animate();
 
-        /* 3. ТАЙМЕРЫ ОТНОШЕНИЙ */
-        function updateTimers() {
-            const now = new Date();
-            
-            // Знакомы (6 марта 2024)
-            const startKnow = new Date(2024, 2, 6);
-            let diffKnow = now - startKnow;
-            let daysKnow = Math.floor(diffKnow / (1000 * 60 * 60 * 24));
-            document.getElementById('timer-know').innerText = `${daysKnow} дней`;
+        /* 3. ВЗРЫВ СЕМЕНИ И ОРБИТА */
+        const core = document.getElementById('core-seed');
+        core.addEventListener('click', () => {
+            document.body.classList.add('bloomed');
+            // Эффект взрыва (упрощенный)
+            for(let i=0; i<50; i++) {
+                let particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                particle.style.width = '4px';
+                particle.style.height = '4px';
+                particle.style.background = '#ff6b9e';
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '99';
+                document.body.appendChild(particle);
 
-            // В отношениях (14 ноября 2025 - как в старом коде)
-            const startLove = new Date(2025, 10, 14);
-            let diffLove = now - startLove;
-            let daysLove = Math.floor(diffLove / (1000 * 60 * 60 * 24));
-            
-            if (daysLove < 0) {
-                document.getElementById('timer-love').innerText = `Скоро`;
-            } else {
-                document.getElementById('timer-love').innerText = `${daysLove} дней`;
+                let angle = Math.random() * Math.PI * 2;
+                let dist = Math.random() * 200 + 50;
+                let tx = Math.cos(angle) * dist;
+                let ty = Math.sin(angle) * dist;
+
+                particle.animate([
+                    { transform: `translate(-50%, -50%) scale(1)`, opacity: 1 },
+                    { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+                ], { duration: 1000, easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)' }).onfinish = () => particle.remove();
             }
-        }
-        updateTimers();
-        setInterval(updateTimers, 60000); // Обновляем каждую минуту
-
-        /* 4. ВЗАИМОДЕЙСТВИЕ С КОТОМ */
-        function triggerMeow(el) {
-            const meow = document.createElement('div');
-            meow.classList.add('meow-text');
-            meow.innerText = 'Мяу!';
-            meow.style.left = Math.random() * 60 + '%';
-            meow.style.top = Math.random() * 50 + '%';
-            el.appendChild(meow);
-            setTimeout(() => meow.remove(), 800);
-        }
-
-        /* 5. КОПИРОВАНИЕ ДИСКОРДА */
-        function copyDiscord(el) {
-            navigator.clipboard.writeText('vvariozunf');
-            const oldText = el.innerText;
-            el.innerText = 'Скопировано!';
-            el.style.color = '#88ff88';
-            setTimeout(() => {
-                el.innerText = oldText;
-                el.style.color = '#fff';
-            }, 1500);
-        }
-
-        /* 6. КАСТОМНЫЙ КУРСОР */
-        const cursor = document.getElementById('cursor');
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
         });
 
-        // Увеличение курсора при наведении на кликабельные элементы
-        const interactables = document.querySelectorAll('a, button, .cat-container, .secret-trigger');
-        interactables.forEach(el => {
-            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
-            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
-        });
-
-        /* 7. ПАСХАЛКА: ХАКЕРСКИЙ РЕЖИМ (МАТРИЦА) */
-        const hackerCanvas = document.getElementById('hacker-canvas');
-        const hCtx = hackerCanvas.getContext('2d');
-        let hWidth, hHeight, hColumns, hDrops;
-
-        function initHacker() {
-            hWidth = hackerCanvas.width = window.innerWidth;
-            hHeight = hackerCanvas.height = window.innerHeight;
-            hColumns = hWidth / 16;
-            hDrops = [];
-            for(let x = 0; x < hColumns; x++) hDrops[x] = 1;
-        }
-        window.addEventListener('resize', initHacker);
-        initHacker();
-
-        function drawHacker() {
-            if (!document.body.classList.contains('hacker-mode')) return;
-            
-            hCtx.fillStyle = "rgba(0, 0, 0, 0.1)";
-            hCtx.fillRect(0, 0, hWidth, hHeight);
-            hCtx.fillStyle = "#ff0000";
-            hCtx.font = "16px monospace";
-
-            for (let i = 0; i < hDrops.length; i++) {
-                const text = Math.random() > 0.5 ? "1" : "0";
-                hCtx.fillText(text, i * 16, hDrops[i] * 16);
-                if (hDrops[i] * 16 > hHeight && Math.random() > 0.975) hDrops[i] = 0;
-                hDrops[i]++;
+        // Вращение орбиты
+        let angle = 0;
+        function rotateOrbit() {
+            if(document.body.classList.contains('bloomed')) {
+                angle += 0.002;
+                document.getElementById('orbit-system').style.transform = `translate(-50%, -50%) rotate(${angle}rad)`;
+                // Чтобы текст не переворачивался, отменяем вращение внутри узлов
+                document.querySelectorAll('.node').forEach(node => {
+                    // Примечание: тут мы фиксируем расположение узлов в CSS, 
+                    // поэтому вращение работает только для самого контейнера.
+                    // В идеале нужно использовать JS для вычисления позиций, 
+                    // но для простоты мы оставим статичные координаты и просто 
+                    // добавим пульсацию.
+                });
             }
+            requestAnimationFrame(rotateOrbit);
         }
-        setInterval(drawHacker, 50);
+        rotateOrbit();
 
-        function toggleHackerMode() {
-            document.body.classList.toggle('hacker-mode');
+        /* 4. ИНФО-ПАНЕЛЬ */
+        const infoData = {
+            'me': { title: 'Ворсинка (Денис)', desc: '16 лет. Исследую цифровое пространство. Люблю игры, хорошую музыку и минимализм.' },
+            'tg': { title: 'Telegram', desc: '@DaYliti\n\nНажми, чтобы скопировать.', link: 'https://t.me/DaYliti' },
+            'dc': { title: 'Discord', desc: 'vvariozunf\n\nНажми, чтобы скопировать.' },
+            'games': { title: 'Games', desc: 'Valorant\nRoblox\nArknights: Endfield\nR.E.P.O.\nHonkai: Star Rail' },
+            'steam': { title: 'Steam', desc: 'DaYliti\n\nНажми, чтобы перейти в профиль.', link: 'https://steamcommunity.com/profiles/76561199741654298/' },
+            'tiktok': { title: 'TikTok', desc: '@dayliti\n\nНажми, чтобы перейти.', link: 'https://www.tiktok.com/@dayliti' }
+        };
+
+        function showInfo(key) {
+            const panel = document.getElementById('info-panel');
+            const title = document.getElementById('info-title');
+            const desc = document.getElementById('info-desc');
+            const data = infoData[key];
+
+            title.innerText = data.title;
+            desc.innerText = data.desc;
+            
+            // Обработка копирования или перехода
+            desc.onclick = () => {
+                if(key === 'tg') { navigator.clipboard.writeText('@DaYliti'); desc.innerText = 'Скопировано!'; }
+                if(key === 'dc') { navigator.clipboard.writeText('vvariozunf'); desc.innerText = 'Скопировано!'; }
+                if(data.link) { window.open(data.link, '_blank'); }
+            };
+            desc.style.cursor = (data.link || key==='tg' || key==='dc') ? 'pointer' : 'default';
+
+            panel.classList.add('active');
         }
+
+        function closeInfo() {
+            document.getElementById('info-panel').classList.remove('active');
+        }
+
+        /* 5. ПИКСЕЛЬНЫЙ КОТ */
+        function catMeow(el) {
+            el.innerText = "/\\_/\\\n( ^.^ )\n > ^ <\nМяу!";
+            el.style.color = "#ff6b9e";
+        }
+        function catIdle(el) {
+            el.innerText = "/\\_/\\\n( o.o )\n > ^ <";
+            el.style.color = "#555";
+        }
+
+        /* 6. АНИМАЦИЯ ЭКВАЛАЙЗЕРА */
+        const bars = document.querySelectorAll('.bar');
+        setInterval(() => {
+            bars.forEach(bar => {
+                bar.style.height = Math.random() * 20 + 3 + 'px';
+            });
+        }, 150);
+
     </script>
 </body>
 </html>
