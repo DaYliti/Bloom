@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- СЮДА ВСТАВИШЬ СВОЮ ИКОНКУ -->
     <link rel="icon" type="image/png" href="favicon.png">
     <title>!</title>
     <style>
@@ -70,7 +69,7 @@
             animation: flowerPulse 2s infinite alternate;
         }
 
-        /* Лепетки цветка на CSS */
+        /* Лепестки цветка на CSS */
         .petal-core {
             position: absolute;
             width: 16px; height: 24px;
@@ -85,8 +84,16 @@
         .petal-core:nth-child(4) { transform: rotate(180deg) translateY(-10px); }
         .petal-core:nth-child(5) { transform: rotate(240deg) translateY(-10px); }
         .petal-core:nth-child(6) { transform: rotate(300deg) translateY(-10px); }
+        
+        /* Центровка белой сердцевины */
         .core-center {
-            width: 12px; height: 12px; background: #fff; border-radius: 50%; z-index: 2;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px; height: 12px; 
+            background: #fff; 
+            border-radius: 50%; 
+            z-index: 2;
             box-shadow: 0 0 10px #fff;
         }
 
@@ -95,7 +102,7 @@
             100% { filter: drop-shadow(0 0 25px #ff6b9e); transform: translate(-50%, -50%) scale(1.1) rotate(15deg); }
         }
 
-        /* --- ОРБИТАЛЬНАЯ СИСТЕМА (Хаос) --- */
+        /* --- ОРБИТАЛЬНАЯ СИСТЕМА (Ровная) --- */
         #orbit-system {
             position: fixed; top: 50%; left: 50%;
             width: 0; height: 0;
@@ -109,18 +116,15 @@
             position: absolute;
             top: 0; left: 0;
             width: 70px; height: 70px;
-            margin: -35px 0 0 -35px;
             background: rgba(20,20,20,0.8);
-            border: 1px solid rgba(255,255,255,0.2); /* Белая рамка */
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             font-size: 11px; letter-spacing: 1px; color: #fff;
             cursor: crosshair;
             transition: all 0.3s ease;
             backdrop-filter: blur(5px);
-            box-shadow: 0 0 15px rgba(255,255,255,0.05); /* Легкая подсветка */
-            /* Отключаем вращение внутри узла */
-            transform-origin: center center;
+            box-shadow: 0 0 15px rgba(255,255,255,0.05);
         }
 
         .node:hover {
@@ -128,7 +132,8 @@
             color: #ff6b9e;
             background: rgba(255,107,158,0.1);
             box-shadow: 0 0 25px rgba(255,107,158,0.6);
-            transform: scale(1.15); /* При наведении узел увеличивается */
+            transform: scale(1.15) !important; /* Принудительно увеличиваем при наведении */
+            z-index: 10;
         }
 
         /* --- ИНФО-ПАНЕЛЬ --- */
@@ -193,7 +198,7 @@
 
     <canvas id="bg-canvas"></canvas>
 
-    <!-- Центральный цветок (семя) -->
+    <!-- Центральный цветок -->
     <div id="core-flower">
         <div class="petal-core"></div>
         <div class="petal-core"></div>
@@ -206,7 +211,6 @@
 
     <!-- Узлы (орбиты) -->
     <div id="orbit-system">
-        <!-- Примечание: координаты задаются через JS для хаоса -->
         <div class="node" data-target="me">INFO</div>
         <div class="node" data-target="tg">TG</div>
         <div class="node" data-target="dc">DC</div>
@@ -282,7 +286,7 @@
                     y: Math.random() * height,
                     size: Math.random() * 6 + 4,
                     speedX: Math.random() * 1.5 - 0.75,
-                    speedY: Math.random() * 1.5 + 0.5, // Падают вниз
+                    speedY: Math.random() * 1.5 + 0.5,
                     rotation: Math.random() * 360,
                     rotSpeed: Math.random() * 2 - 1,
                     color: `rgba(255, 107, 158, ${Math.random() * 0.4 + 0.1})`
@@ -297,7 +301,6 @@
         });
 
         function drawPetalShape(ctx, size) {
-            // Рисуем лепесток сакуры
             ctx.beginPath();
             ctx.moveTo(0, -size);
             ctx.bezierCurveTo(size, -size, size, size, 0, size);
@@ -309,12 +312,10 @@
             ctx.clearRect(0, 0, width, height);
             
             petals.forEach(p => {
-                // Движение
                 p.x += p.speedX;
                 p.y += p.speedY;
                 p.rotation += p.rotSpeed;
 
-                // Отталкивание от мыши
                 let dx = mouse.x - p.x;
                 let dy = mouse.y - p.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
@@ -323,13 +324,11 @@
                     p.y -= dy * 0.05;
                 }
 
-                // Респавн (сверху)
                 if(p.y > height + 20 || p.x < -20 || p.x > width + 20) {
                     p.y = -20;
                     p.x = Math.random() * width;
                 }
 
-                // Рисование
                 ctx.save();
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.rotation * Math.PI / 180);
@@ -340,38 +339,25 @@
             requestAnimationFrame(animate);
         }
 
-        /* 4. ХАОТИЧНЫЕ ОРБИТЫ */
+        /* 4. РОВНЫЕ ОРБИТЫ (Возвращено) */
         const nodes = document.querySelectorAll('.node');
-        
-        // Настраиваем параметры для каждого узла (разные скорости, радиусы, фазы)
-        const nodeParams = [];
-        nodes.forEach((node, i) => {
-            nodeParams.push({
-                el: node,
-                baseRadius: 140 + Math.random() * 80, // Разная дистанция
-                speed: (Math.random() * 0.5 + 0.5) * (Math.random() > 0.5 ? 1 : -1), // Разное направление
-                offset: Math.random() * Math.PI * 2,
-                wobbleSpeed: Math.random() * 2 + 1,
-                wobbleAmp: Math.random() * 30 + 10 // Амплитуда хаоса
-            });
-        });
+        let orbitAngle = 0;
+        const orbitRadius = 160; // Фиксированный радиус
 
-        let time = 0;
         function animateOrbits() {
             if(document.body.classList.contains('bloomed')) {
-                time += 0.005;
-                nodeParams.forEach(p => {
-                    // Вычисляем хаотичный радиус (пульсация)
-                    let currentRadius = p.baseRadius + Math.sin(time * p.wobbleSpeed + p.offset) * p.wobbleAmp;
-                    // Вычисляем угол
-                    let angle = time * p.speed + p.offset;
+                orbitAngle += 0.002; // Скорость вращения
+                
+                nodes.forEach((node, index) => {
+                    // Распределяем узлы равномерно по кругу
+                    const baseAngle = (index * Math.PI * 2) / nodes.length;
+                    const currentAngle = baseAngle + orbitAngle;
                     
-                    // Позиция
-                    let x = Math.cos(angle) * currentRadius;
-                    let y = Math.sin(angle) * currentRadius;
-
-                    // Двигаем узел. Текст внутри всегда ровный, т.к. мы двигаем сам div, а не контейнер
-                    p.el.style.transform = `translate(${x}px, ${y}px)`;
+                    const x = Math.cos(currentAngle) * orbitRadius;
+                    const y = Math.sin(currentAngle) * orbitRadius;
+                    
+                    // Сдвигаем узел, сохраняя его текст ровным (мы двигаем только сам div)
+                    node.style.transform = `translate(calc(${x}px - 50%), calc(${y}px - 50%))`;
                 });
             }
             requestAnimationFrame(animateOrbits);
@@ -452,9 +438,8 @@
 
             title.innerText = data.title;
             desc.innerText = data.desc;
-            actionsContainer.innerHTML = ''; // Очищаем старые кнопки
+            actionsContainer.innerHTML = '';
 
-            // Добавляем кнопку копирования (если есть текст)
             if (data.copyText) {
                 let copyBtn = document.createElement('button');
                 copyBtn.className = 'action-btn copy';
@@ -468,7 +453,6 @@
                 actionsContainer.appendChild(copyBtn);
             }
 
-            // Добавляем кнопку перехода (если есть ссылка)
             if (data.link) {
                 let linkBtn = document.createElement('a');
                 linkBtn.className = 'action-btn';
@@ -485,7 +469,6 @@
             document.getElementById('info-panel').classList.remove('active');
         }
 
-        // Привязка кликов к узлам
         nodes.forEach(node => {
             node.addEventListener('click', (e) => {
                 showInfo(e.target.getAttribute('data-target'));
