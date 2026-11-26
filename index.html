@@ -47,7 +47,7 @@
     height: 55px;
     border-radius: 18px;
     border: 1px solid rgba(255,255,255,.3);
-    background: rgba(255,255,255,.02);
+    background: transparent; /* Фон полностью прозрачный */
     backdrop-filter: blur(4px);
     transform: translateY(38px); 
     cursor: default; 
@@ -55,7 +55,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Плавная смена цвета рамки на розовый */
     transition: border-color 4s linear;
   }
 
@@ -67,39 +66,27 @@
     width: 100%;
     height: 0%; 
     background: #ff6b9e;
-    transition: height 4s linear, opacity 0.3s ease;
+    transition: height 0.3s ease, opacity 0.3s ease; /* Быстро стекает при уходе мыши */
     z-index: 1;
-    opacity: 0;
+    border-radius: 0 0 18px 18px;
   }
 
-  /* ВОЛНЫ (Огромные круги, которые едва касаются поверхности воды) */
-  .liquid::before, .liquid::after {
+  /* Неровная кромка воды */
+  .liquid::before {
     content: '';
     position: absolute;
-    width: 600px;
-    height: 600px;
-    left: 50%;
-    margin-left: -300px;
-    bottom: 100%; /* Прижимаем к верху жидкости */
-    margin-bottom: -10px; /* Опускаем вниз ровно на 10px, чтобы была легкая рябь */
+    top: -8px;
+    left: -10%;
+    width: 120%;
+    height: 16px;
     background: #ff6b9e;
-    border-radius: 45%; /* Делаем форму слегка неровной */
-    animation: spin 5s linear infinite;
+    border-radius: 40% 60% 30% 70% / 50% 40% 60% 50%;
+    animation: wobble 2s infinite alternate ease-in-out;
   }
 
-  .liquid::after {
-    background: #ff8fb6; /* Светлый оттенок для глубины */
-    width: 650px;
-    height: 650px;
-    margin-left: -325px;
-    margin-bottom: -8px;
-    border-radius: 47%;
-    animation: spin 7s linear infinite reverse;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  @keyframes wobble {
+    0% { transform: translateX(-3%); }
+    100% { transform: translateX(3%); }
   }
 
   /* Текст внутри кнопки */
@@ -112,16 +99,19 @@
     color: #fff;
     text-shadow: 0 1px 4px rgba(0,0,0,0.4);
     pointer-events: none;
+    /* Добавляем отступ, чтобы текст не дергался, когда меняется длина слова */
+    text-align: left; 
+    width: 110px; 
   }
 
-  /* Состояние при наведении */
+  /* Состояние при наведении (заполнение) */
   #open-btn.filling {
-    border-color: #ff6b9e; /* Рамка кнопки становится розовой */
+    border-color: #ff6b9e;
   }
 
   #open-btn.filling .liquid {
-    height: 100%; /* Жидкость заполняется до верха */
-    opacity: 1; 
+    height: 100%;
+    transition: height 4s linear; /* Медленно наливается при наведении */
   }
 
   /* ---------- Лепестки сакуры ---------- */
@@ -238,6 +228,7 @@
   const video = document.getElementById('video-bg');
   const ui = document.getElementById('ui');
   const openBtn = document.getElementById('open-btn');
+  const btnText = document.querySelector('.btn-text');
   const petalsContainer = document.getElementById('petals-container');
 
   video.addEventListener('ended', () => {
@@ -280,9 +271,27 @@
 
   let fillTimeout = null;
   let isAnimating = false;
+  let typingInterval = null;
+  let dots = 0;
 
-  // 4000 = 4 секунды (ровно столько длится CSS-анимация заполнения)
-  const FILL_DURATION = 4000; 
+  // Функция печати текста "Opening..."
+  function startTyping() {
+    clearInterval(typingInterval);
+    dots = 0;
+    typingInterval = setInterval(() => {
+      dots = (dots + 1) % 4; // 0, 1, 2, 3
+      const dotStr = '.'.repeat(dots);
+      btnText.textContent = "Opening" + dotStr;
+    }, 400); // Скорость печати точек (400мс)
+  }
+
+  // Функция сброса текста обратно на "Open"
+  function stopTyping() {
+    clearInterval(typingInterval);
+    btnText.textContent = "Open";
+  }
+
+  const FILL_DURATION = 4000; // 4 секунды
 
   openBtn.addEventListener('mouseenter', () => {
     if (isAnimating) return;
@@ -291,19 +300,18 @@
     const btnX = rect.left + rect.width / 2;
     const btnY = rect.top + rect.height / 2;
 
-    // Запускаем заполнение (добавляем класс)
+    // 1. Начинаем наливать воду
     openBtn.classList.add('filling');
+    // 2. Запускаем печать текста
+    startTyping();
 
-    // Таймер ровно на 4 секунды (без задержек)
+    // 3. Ждем ровно 4 секунды, пока вода не заполнится
     fillTimeout = setTimeout(() => {
       isAnimating = true;
       
-      // 1. Лепестки
       spawnPetals(btnX, btnY);
-      // 2. Убираем кнопку
       ui.classList.remove('show');
       setTimeout(() => { ui.style.display = 'none'; }, 400);
-      // 3. Открываем текст
       document.body.classList.add('opened');
       
     }, FILL_DURATION); 
@@ -311,8 +319,9 @@
 
   openBtn.addEventListener('mouseleave', () => {
     if (isAnimating) return;
-    // Если убрали мышку до заполнения, вода стекает обратно, рамка белеет, таймер сбрасывается
+    // Если убрали мышку — вода стекает, текст сбрасывается
     openBtn.classList.remove('filling');
+    stopTyping();
     clearTimeout(fillTimeout);
   });
 </script>
