@@ -18,15 +18,14 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* Видео на фоне */
   #video-bg {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Сохраняет пропорции, не растягивает */
+    object-fit: contain;
     z-index: 1;
-    transition: opacity 2s ease;
+    transition: opacity 3s ease; /* Видео затухает плавнее */
   }
   
   body.opened #video-bg { opacity: 0.15; }
@@ -47,8 +46,8 @@
     background:rgba(255,255,255,.02);
     color:rgba(255,255,255,.85);
     border:1px solid rgba(255,255,255,.3);
-    border-radius:18px; /* Средняя форма между овалом и прямоугольником */
-    transform: translateY(38px); /* Опускаем кнопку на ~1 см вниз */
+    border-radius:18px; 
+    transform: translateY(38px); 
     padding:16px 50px;
     font:inherit;
     font-size:13px;
@@ -66,7 +65,7 @@
     background:rgba(255,255,255,.95);
     border-color:#fff;
     letter-spacing:.45em;
-    transform: translateY(38px) scale(1.03); /* Чуть увеличивается при наведении */
+    transform: translateY(38px) scale(1.03);
     box-shadow:0 0 30px rgba(255,255,255,.3);
   }
 
@@ -75,39 +74,49 @@
     position: fixed;
     inset: 0;
     pointer-events: none;
-    z-index: 10; /* Поверх всего, чтобы лепестки красиво разлетались */
+    z-index: 10; 
     overflow: hidden;
   }
   .petal {
     position: absolute;
-    /* Красивый розовый градиент для лепестка */
     background: linear-gradient(135deg, #ffb7c5, #ff6b9e);
-    /* Форма лепестка сакуры (закругленные углы с одной стороны) */
     border-radius: 15px 2px 15px 2px;
     opacity: 1;
-    box-shadow: 0 0 5px rgba(255, 107, 158, 0.4);
-    /* Начальная позиция (центр кнопки) */
+    box-shadow: 0 0 8px rgba(255, 107, 158, 0.5);
     transform: translate(-50%, -50%) scale(var(--scale)) rotate(0deg);
   }
 
-  /* ---------- Био страница ---------- */
+  /* ---------- Био страница (Текст вылетает из лепестков) ---------- */
   #bio{
     position:fixed; inset:0;
     display:grid; place-items:center;
-    opacity:0; pointer-events:none;
-    transition:opacity 1.6s ease .25s;
     z-index:4;
     padding:32px;
   }
-  body.opened #bio{ opacity:1; pointer-events:auto; }
 
   .inner{
     text-align:center;
     max-width:520px;
-    transform:translateY(14px);
-    transition:transform 1.6s cubic-bezier(.2,.8,.2,1) .25s;
   }
-  body.opened .inner{ transform:translateY(0); }
+
+  /* Базовое состояние элементов (спрятаны, размыты, уменьшены) */
+  .inner h1, .inner .tag, .inner nav {
+    opacity: 0;
+    transform: translateY(40px) scale(0.8);
+    filter: blur(12px);
+    transition: all 3s cubic-bezier(0.1, 0.8, 0.2, 1);
+  }
+
+  /* Когда кнопка нажата, они вылетают вперед и становятся четкими */
+  body.opened .inner h1 { 
+    opacity: 1; transform: translateY(0) scale(1); filter: blur(0); transition-delay: 0.1s;
+  }
+  body.opened .inner .tag { 
+    opacity: 1; transform: translateY(0) scale(1); filter: blur(0); transition-delay: 0.3s;
+  }
+  body.opened .inner nav { 
+    opacity: 1; transform: translateY(0) scale(1); filter: blur(0); transition-delay: 0.5s;
+  }
 
   .inner h1{
     margin:0 0 18px;
@@ -152,8 +161,6 @@
 <video id="video-bg" src="Intro.mp4" autoplay muted playsinline></video>
 
 <div id="ui"><button id="open">Open</button></div>
-
-<!-- Контейнер для лепестков -->
 <div id="petals-container"></div>
 
 <main id="bio">
@@ -174,79 +181,69 @@
   const openBtn = document.getElementById('open');
   const petalsContainer = document.getElementById('petals-container');
 
-  // Показываем кнопку после окончания видео
   video.addEventListener('ended', () => {
     ui.classList.add('show');
   });
 
-  // Функция для создания лепестков
   function spawnPetals(x, y) {
-    const petalCount = 45; // Количество лепестков
+    const petalCount = 80; // Увеличили количество для плотного облака
 
     for (let i = 0; i < petalCount; i++) {
       const petal = document.createElement('div');
       petal.classList.add('petal');
 
-      // Случайный размер
-      const size = Math.random() * 12 + 8; // от 8 до 20 px
+      const size = Math.random() * 15 + 10; // Размер от 10 до 25px
       petal.style.width = `${size}px`;
       petal.style.height = `${size}px`;
 
-      // Начальная позиция — центр кнопки
       petal.style.left = `${x}px`;
       petal.style.top = `${y}px`;
 
-      // Случайный угол и дистанция разлета (до краев экрана)
+      // Плавный разлет на большое расстояние
       const angle = Math.random() * Math.PI * 2;
       const distance = Math.random() * (Math.max(window.innerWidth, window.innerHeight) * 0.6) + 150;
       const tx = Math.cos(angle) * distance;
-      const ty = Math.sin(angle) * distance;
+      const ty = Math.sin(angle) * distance - 50; // Чуть вверх, чтобы парили
 
-      // Случайный поворот и масштаб для естественности
-      const rot = Math.random() * 720 - 360;
+      const rot = Math.random() * 1080 - 540; // Долгое вращение
       const scale = Math.random() * 0.6 + 0.4;
+      
+      // Длительность полета: от 5 до 8 секунд (медленно и плавно)
+      const duration = Math.random() * 3 + 5; 
 
-      // Передаем значения в CSS-переменные
       petal.style.setProperty('--scale', scale);
-
       petalsContainer.appendChild(petal);
 
-      // Запускаем анимацию на следующем кадре (чтобы браузер применил начальные стили)
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          // Плавно двигаем к краям и растворяем
-          petal.style.transition = `transform 2.5s cubic-bezier(0.15, 0.8, 0.3, 1), opacity 2.5s ease-in`;
+          // Используем очень мягкую кривую для плавного замедления
+          petal.style.transition = `transform ${duration}s cubic-bezier(0.1, 0.7, 0.2, 1), opacity ${duration}s ease-out`;
           petal.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(${scale}) rotate(${rot}deg)`;
-          petal.style.opacity = '0'; // Лепесток испаряется
+          petal.style.opacity = '0';
         });
       });
 
-      // Удаляем из DOM через 2.6 секунды, чтобы не засорять память
+      // Удаляем элемент только когда он полностью исчезнет
       setTimeout(() => {
         petal.remove();
-      }, 2600);
+      }, duration * 1000 + 100);
     }
   }
 
-  // Обработка клика по кнопке
   openBtn.addEventListener('click', () => {
-    // 1. Получаем координаты центра кнопки
     const rect = openBtn.getBoundingClientRect();
     const btnX = rect.left + rect.width / 2;
     const btnY = rect.top + rect.height / 2;
 
-    // 2. Запускаем лепестки
+    // 1. Запускаем лепестки
     spawnPetals(btnX, btnY);
 
-    // 3. Убираем кнопку
+    // 2. Убираем кнопку
     ui.classList.remove('show');
     setTimeout(() => { ui.style.display = 'none'; }, 400);
 
-    // 4. Включаем режим открытого сайта (текст начинает появляться)
-    // Задержку в 200мс делаем, чтобы лепестки успели вылететь чуть раньше текста
-    setTimeout(() => {
-      document.body.classList.add('opened');
-    }, 200);
+    // 3. Сразу запускаем появление текста, чтобы он "выезжал" из пролетающих лепестков
+    document.body.classList.add('opened');
   });
 </script>
 </body>
