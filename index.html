@@ -51,47 +51,50 @@
     backdrop-filter: blur(4px);
     transform: translateY(38px); 
     cursor: default; 
-    overflow: hidden; /* Обрезаем всё лишнее */
+    overflow: hidden; /* Обрезаем всё, что выходит за края */
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Плавная смена цвета рамки на розовый */
+    transition: border-color 4s linear;
   }
 
   /* Слой с жидкостью */
   .liquid {
     position: absolute;
-    bottom: -1px;
-    left: -1px;
-    width: calc(100% + 2px);
+    bottom: 0;
+    left: 0;
+    width: 100%;
     height: 0%; 
     background: #ff6b9e;
-    border: 1px solid #ff6b9e; /* Розовая рамка для воды */
-    border-top: none;
-    border-radius: 0 0 18px 18px;
-    transition: height 4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    transition: height 4s linear, opacity 0.3s ease;
     z-index: 1;
     opacity: 0;
   }
 
-  /* ВОЛНЫ (Идеально ровные круги) */
+  /* ВОЛНЫ (Огромные круги, которые едва касаются поверхности воды) */
   .liquid::before, .liquid::after {
     content: '';
     position: absolute;
-    width: 300px;  /* Одинаковая ширина */
-    height: 300px; /* Одинаковая высота (чтобы был ровный круг) */
+    width: 600px;
+    height: 600px;
     left: 50%;
-    margin-left: -150px; /* Центрируем */
-    bottom: calc(100% - 35px); /* Прижимаем к поверхности */
+    margin-left: -300px;
+    bottom: 100%; /* Прижимаем к верху жидкости */
+    margin-bottom: -10px; /* Опускаем вниз ровно на 10px, чтобы была легкая рябь */
     background: #ff6b9e;
-    border-radius: 45%;
+    border-radius: 45%; /* Делаем форму слегка неровной */
     animation: spin 5s linear infinite;
   }
 
   .liquid::after {
-    background: #ff8fb6; /* Светлее для объема */
-    border-radius: 40%;
+    background: #ff8fb6; /* Светлый оттенок для глубины */
+    width: 650px;
+    height: 650px;
+    margin-left: -325px;
+    margin-bottom: -8px;
+    border-radius: 47%;
     animation: spin 7s linear infinite reverse;
-    opacity: 0.8;
   }
 
   @keyframes spin {
@@ -112,8 +115,12 @@
   }
 
   /* Состояние при наведении */
+  #open-btn.filling {
+    border-color: #ff6b9e; /* Рамка кнопки становится розовой */
+  }
+
   #open-btn.filling .liquid {
-    height: 100%;
+    height: 100%; /* Жидкость заполняется до верха */
     opacity: 1; 
   }
 
@@ -274,8 +281,8 @@
   let fillTimeout = null;
   let isAnimating = false;
 
-  // Тайминги
-  const FILL_DURATION = 4000; // 4 секунды на заполнение
+  // 4000 = 4 секунды (ровно столько длится CSS-анимация заполнения)
+  const FILL_DURATION = 4000; 
 
   openBtn.addEventListener('mouseenter', () => {
     if (isAnimating) return;
@@ -284,16 +291,19 @@
     const btnX = rect.left + rect.width / 2;
     const btnY = rect.top + rect.height / 2;
 
-    // Запускаем налив воды
+    // Запускаем заполнение (добавляем класс)
     openBtn.classList.add('filling');
 
-    // Как только вода заполнилась (ровно через 4 секунды) — запускаем лепестки
+    // Таймер ровно на 4 секунды (без задержек)
     fillTimeout = setTimeout(() => {
       isAnimating = true;
       
+      // 1. Лепестки
       spawnPetals(btnX, btnY);
+      // 2. Убираем кнопку
       ui.classList.remove('show');
       setTimeout(() => { ui.style.display = 'none'; }, 400);
+      // 3. Открываем текст
       document.body.classList.add('opened');
       
     }, FILL_DURATION); 
@@ -301,7 +311,7 @@
 
   openBtn.addEventListener('mouseleave', () => {
     if (isAnimating) return;
-    // Если убрали мышку, вода мгновенно/плавно стекает обратно, отменяем таймер
+    // Если убрали мышку до заполнения, вода стекает обратно, рамка белеет, таймер сбрасывается
     openBtn.classList.remove('filling');
     clearTimeout(fillTimeout);
   });
