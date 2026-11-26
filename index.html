@@ -40,51 +40,81 @@
   }
   #ui.show{ opacity:1; pointer-events:auto; }
 
-  /* ---------- Новая кнопка-контейнер ---------- */
+  /* ---------- Кнопка-контейнер ---------- */
   #open-btn {
     position: relative;
-    width: 160px;
-    height: 50px;
+    width: 180px;
+    height: 55px;
     border-radius: 18px;
     border: 1px solid rgba(255,255,255,.3); /* Белый контур */
     background: rgba(255,255,255,.02);
     backdrop-filter: blur(4px);
     transform: translateY(38px); 
-    cursor: default; /* Курсор больше не палец, т.к. это не клик */
-    overflow: hidden; /* Обрезаем жидкость по форме кнопки */
+    cursor: default; /* Убрали курсор-палец */
+    overflow: hidden; /* Обрезаем всё лишнее */
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: border-color 0.3s;
   }
 
-  /* Розовая жидкость */
+  /* Слой с жидкостью */
   .liquid {
     position: absolute;
-    bottom: -1px;
-    left: -1px;
-    width: calc(100% + 2px);
+    bottom: 0;
+    left: 0;
+    width: 100%;
     height: 0%; /* Изначально пусто */
     background: #ff6b9e;
-    border: 1px solid #ff6b9e; /* Розовый контур, который перекроет белый */
-    border-radius: 18px;
-    transition: height 1.8s cubic-bezier(0.3, 0.8, 0.3, 1); /* Плавное заполнение */
+    /* Розовый контур для боков и низа, чтобы перекрыть белый */
+    box-shadow: inset 1px 0 0 #ff6b9e, inset -1px 0 0 #ff6b9e, inset 0 -1px 0 #ff6b9e;
+    border-radius: 0 0 18px 18px;
+    transition: height 4.5s cubic-bezier(0.4, 0.0, 0.2, 1); /* Медленное заполнение */
     z-index: 1;
+  }
+
+  /* Волны (два вращающихся круга) */
+  .wave {
+    position: absolute;
+    top: -40px;
+    left: -50%;
+    width: 200%;
+    height: 80px;
+    border-radius: 40%;
+    animation: spin 4s linear infinite;
+  }
+  .wave1 {
+    background: #ff6b9e;
+  }
+  .wave2 {
+    background: #ff8fb6; /* Чуть светлее для объема */
+    top: -45px;
+    border-radius: 45%;
+    animation: spin 5s linear infinite reverse;
+    opacity: 0.7;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   /* Текст внутри кнопки */
   .btn-text {
     position: relative;
-    z-index: 2; /* Текст всегда поверх жидкости */
+    z-index: 2;
     font-size: 13px;
     letter-spacing: .4em;
     text-transform: uppercase;
-    color: rgba(255,255,255,.85);
-    pointer-events: none; /* Чтобы мышь не сбивалась на текст */
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3); /* Тень для читаемости */
+    pointer-events: none;
+    transition: color 0.5s;
   }
 
-  /* Состояние при наведении мыши */
-  #open-btn:hover .liquid {
-    height: calc(100% + 2px); /* Заполняем до самого верха */
+  /* Состояние при наведении */
+  #open-btn.filling .liquid {
+    height: 100%;
   }
 
   /* ---------- Лепестки сакуры ---------- */
@@ -177,9 +207,12 @@
 <video id="video-bg" src="Intro.mp4" autoplay muted playsinline></video>
 
 <div id="ui">
-  <!-- Контейнер новой кнопки -->
+  <!-- Кнопка теперь div, так как клик не нужен -->
   <div id="open-btn">
-    <div class="liquid"></div>
+    <div class="liquid">
+      <div class="wave wave1"></div>
+      <div class="wave wave2"></div>
+    </div>
     <span class="btn-text">Open</span>
   </div>
 </div>
@@ -208,7 +241,6 @@
     ui.classList.add('show');
   });
 
-  // Функция лепестков
   function spawnPetals(x, y) {
     const petalCount = 80;
     for (let i = 0; i < petalCount; i++) {
@@ -243,9 +275,13 @@
     }
   }
 
-  // Логика заполнения кнопки
   let fillTimeout = null;
   let isAnimating = false;
+
+  // Время заполнения водой (в миллисекундах) — 4.5 секунды
+  const FILL_DURATION = 4500; 
+  // Пауза после заполнения (1 секунда)
+  const DELAY_AFTER_FILL = 1000; 
 
   openBtn.addEventListener('mouseenter', () => {
     if (isAnimating) return;
@@ -254,29 +290,31 @@
     const btnX = rect.left + rect.width / 2;
     const btnY = rect.top + rect.height / 2;
 
-    // CSS анимация заполнения длится 1.8 секунды (1800мс)
-    // Когда она завершится, запускаем лепестки и открываем сайт
+    // Запускаем CSS-анимацию заполнения
+    openBtn.classList.add('filling');
+
+    // Ждем, пока вода заполнится, плюс 1 секунду паузы
     fillTimeout = setTimeout(() => {
       isAnimating = true;
       
-      // 1. Запускаем лепестки
+      // 1. Лепестки
       spawnPetals(btnX, btnY);
 
       // 2. Убираем кнопку
       ui.classList.remove('show');
       setTimeout(() => { ui.style.display = 'none'; }, 400);
 
-      // 3. Открываем текст
+      // 3. Появление текста
       document.body.classList.add('opened');
       
-    }, 1800); 
+    }, FILL_DURATION + DELAY_AFTER_FILL); 
   });
 
-  // Если пользователь убрал мышку до того, как шкала заполнилась — отменяем
   openBtn.addEventListener('mouseleave', () => {
     if (isAnimating) return;
+    // Если убрали мышку, вода сливается обратно (CSS сделает это плавно)
+    openBtn.classList.remove('filling');
     clearTimeout(fillTimeout);
-    // CSS transition сам плавно сольет жидкость обратно вниз
   });
 </script>
 </body>
