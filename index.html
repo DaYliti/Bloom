@@ -26,7 +26,6 @@
   }
   body.opened #c{ opacity:.18; }
 
-  /* ---------- Open button ---------- */
   #ui{
     position:fixed; inset:0;
     display:grid; place-items:center;
@@ -61,7 +60,6 @@
     box-shadow:0 0 60px rgba(255,80,140,.4), inset 0 0 34px rgba(255,80,140,.13);
   }
 
-  /* ---------- Bio ---------- */
   #bio{
     position:fixed; inset:0;
     display:grid; place-items:center;
@@ -301,7 +299,7 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d', { alpha:false });
 
 let W, H, dpr, FS, cw, ch, COLS, ROWS, CY, SCALE;
-let gL, gD, gR, gG, gB, gF, gP, gHas, gFirst, gChars, gColr;
+let gL, gD, gR, gG, gB, gF, gP, gHas, gFirst, gChars, gColr, EDGE_CH;
 let MSG_GRID, LETTERS;
 let glowA, glowACtx, glowB, glowBCtx;
 
@@ -341,6 +339,7 @@ function resize(){
   gFirst = new Float32Array(N).fill(Infinity);
   gChars = new Array(N);
   gColr = new Uint32Array(N);
+  EDGE_CH = new Array(N); // <--- ИСПРАВЛЕНО: теперь создается здесь
 
   MSG_GRID = new Array(N);
   for(let r=0;r<ROWS;r++)
@@ -540,8 +539,6 @@ function F(r,c){
   const i = r*COLS + c;
   return gHas[i] ? gD[i] : -3.0;
 }
-
-const EDGE_CH = new Array(ROWS*COLS);
 
 function computeEdges(){
   for(let r=0;r<ROWS;r++){
