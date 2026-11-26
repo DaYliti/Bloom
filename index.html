@@ -137,12 +137,11 @@
 </main>
 
 <script>
+console.log("Скрипт анимации загружен и начал работу.");
+
 (() => {
 "use strict";
 
-/* =====================================================================
-   CONSTANTS
-   ===================================================================== */
 const DURATION   = 10.0;
 const MESSAGE    = "let it bloom ";
 const TYPED      = "bloom()";
@@ -166,9 +165,6 @@ const STOPS = [
   [1.00, 0.80, 0.84],
 ];
 
-/* =====================================================================
-   RNG
-   ===================================================================== */
 let _seed = 11;
 function rnd(){
   _seed |= 0; _seed = _seed + 0x6D2B79F5 | 0;
@@ -191,18 +187,12 @@ function rnd2(){
   return ((t ^ t >>> 14) >>> 0) / 4294967296;
 }
 
-/* =====================================================================
-   MATH
-   ===================================================================== */
 const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
 function smoothstep(a,b,x){
   const k = clamp01((x-a)/(b-a));
   return k*k*(3-2*k);
 }
 
-/* =====================================================================
-   PETAL DATA
-   ===================================================================== */
 const pet = { theta:[], L:[], W:[], open:[], t0:[], t1:[], curl:[], tint:[], delay:[] };
 LAYERS.forEach(([n,L,Wd,op,t0,t1,curl,az,tint], li) => {
   for(let k=0;k<n;k++){
@@ -229,18 +219,12 @@ const pCurl  = Float32Array.from(pet.curl);
 const pTint  = Float32Array.from(pet.tint);
 const pDelay = Float32Array.from(pet.delay);
 
-/* =====================================================================
-   GRID / POINT RESOLUTION
-   ===================================================================== */
-const U  = 40;   // petal segments along length
-const V  = 28;   // petal segments across width
-const NC = 1400; // centre particles
+const U  = 40;   
+const V  = 28;   
+const NC = 1400; 
 const GS = U*V;
 const NP = P*GS + NC;
 
-/* =====================================================================
-   POINT BUFFERS
-   ===================================================================== */
 const PX  = new Float32Array(NP), PY  = new Float32Array(NP), PZ  = new Float32Array(NP);
 const NXa = new Float32Array(NP), NYa = new Float32Array(NP), NZa = new Float32Array(NP);
 const CR  = new Float32Array(NP), CG  = new Float32Array(NP), CB  = new Float32Array(NP);
@@ -249,14 +233,12 @@ const JX  = new Float32Array(NP), JY  = new Float32Array(NP), JZ  = new Float32A
 const AOa = new Float32Array(NP);
 const PID = new Int32Array(NP);
 
-/* --- static per-point data (petals) --- */
 (function initPetalPoints(){
   let idx = 0;
   for(let p=0;p<P;p++){
     const tint = pTint[p], delay = pDelay[p];
     for(let i=0;i<U;i++){
       const u = i/(U-1);
-
       const cu = u * (STOPS.length - 1);
       const i0 = Math.min(Math.floor(cu), STOPS.length - 2);
       const fr = cu - i0;
@@ -279,7 +261,6 @@ const PID = new Int32Array(NP);
   }
 })();
 
-/* --- centre particles --- */
 const C_R = new Float32Array(NC);
 const C_A = new Float32Array(NC);
 const C_DELAY = BLOW_START + 1.15;
@@ -302,11 +283,8 @@ const C_DELAY = BLOW_START + 1.15;
   }
 })();
 
-/* =====================================================================
-   LIGHT / CAMERA
-   ===================================================================== */
-const CDY = -Math.cos(ELEV), CDZ = Math.sin(ELEV);   // CAM_D = (0, CDY, CDZ)
-const CUY =  Math.sin(ELEV), CUZ = Math.cos(ELEV);   // CAM_UP = (0, CUY, CUZ)
+const CDY = -Math.cos(ELEV), CDZ = Math.sin(ELEV);   
+const CUY =  Math.sin(ELEV), CUZ = Math.cos(ELEV);   
 
 let LX, LY, LZ, HX, HY, HZ;
 (function initLight(){
@@ -319,9 +297,6 @@ let LX, LY, LZ, HX, HY, HZ;
   HX=hx/ln; HY=hy/ln; HZ=hz/ln;
 })();
 
-/* =====================================================================
-   CANVAS / GRID STATE
-   ===================================================================== */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d', { alpha:false });
 
@@ -374,7 +349,6 @@ function resize(){
 
   LETTERS = MESSAGE.split('').filter(c => c !== ' ');
 
-  // glow buffers
   glowA = document.createElement('canvas');
   glowA.width  = Math.max(1, Math.floor(W/5));
   glowA.height = Math.max(1, Math.floor(H/5));
@@ -386,9 +360,6 @@ function resize(){
   glowBCtx = glowB.getContext('2d');
 }
 
-/* =====================================================================
-   GEOMETRY SCRATCH
-   ===================================================================== */
 const tgx = new Float32Array(GS);
 const tgy = new Float32Array(GS);
 const tgz = new Float32Array(GS);
@@ -397,9 +368,6 @@ const zArr   = new Float32Array(U);
 const phiArr = new Float32Array(U);
 const wArr   = new Float32Array(U);
 
-/* =====================================================================
-   BUILD PETAL POINTS
-   ===================================================================== */
 function buildPetals(t){
   const du = 1/(U-1);
   let base = 0;
@@ -469,9 +437,6 @@ function buildPetals(t){
   }
 }
 
-/* =====================================================================
-   BUILD CENTRE POINTS
-   ===================================================================== */
 function buildCentre(t){
   const base = P*GS;
   const open = smoothstep(3, 5.5, t);
@@ -490,9 +455,6 @@ function buildCentre(t){
   }
 }
 
-/* =====================================================================
-   RASTERIZE
-   ===================================================================== */
 function rasterize(t){
   buildPetals(t);
   buildCentre(t);
@@ -573,9 +535,6 @@ function rasterize(t){
   return true;
 }
 
-/* =====================================================================
-   EDGE DETECTION
-   ===================================================================== */
 function F(r,c){
   if(r < 0 || r >= ROWS || c < 0 || c >= COLS) return -3.0;
   const i = r*COLS + c;
@@ -615,9 +574,6 @@ function computeEdges(){
   }
 }
 
-/* =====================================================================
-   TEXT LAYER (bloom() typing)
-   ===================================================================== */
 const txtOut = [];
 function textLayer(t){
   txtOut.length = 0;
@@ -648,9 +604,6 @@ function textLayer(t){
   }
 }
 
-/* =====================================================================
-   DRAW FRAME
-   ===================================================================== */
 const colorBuckets = new Map();
 
 function drawFrame(t){
@@ -682,13 +635,11 @@ function drawFrame(t){
         if(e) ch = e;
       }
 
-      // colour
       let r = gR[i], g = gG[i], b = gB[i];
       if(!gF[i] && EDGE_CH[i]){
         r = r*1.25 + 0.06; g = g*1.25 + 0.06; b = b*1.25 + 0.06;
       }
 
-      // settle glitch
       if(t < 5.5){
         if(gFirst[i] === Infinity) gFirst[i] = t;
         if(t - gFirst[i] < 0.12 + ((i*7919) % 1000)/1000 * 0.5){
@@ -712,7 +663,6 @@ function drawFrame(t){
       gColr[i] = (R << 16) | (G << 8) | B;
     }
 
-    // group by colour
     colorBuckets.clear();
     for(let i=0;i<ROWS*COLS;i++){
       if(!gHas[i] || gL[i] <= 0.03 || gChars[i] === undefined) continue;
@@ -732,11 +682,9 @@ function drawFrame(t){
       }
     });
 
-    // reset first_on for empty cells
     for(let i=0;i<ROWS*COLS;i++) if(!gHas[i]) gFirst[i] = Infinity;
   }
 
-  // typed text
   textLayer(t);
   if(txtOut.length){
     ctx.fillStyle = '#dce6ff';
@@ -747,7 +695,6 @@ function drawFrame(t){
     }
   }
 
-  // glow
   ctx.save();
   ctx.setTransform(1,0,0,1,0,0);
   ctx.globalCompositeOperation = 'lighter';
@@ -764,9 +711,6 @@ function drawFrame(t){
   ctx.restore();
 }
 
-/* =====================================================================
-   MAIN LOOP
-   ===================================================================== */
 resize();
 window.addEventListener('resize', () => { resize(); });
 
@@ -800,9 +744,6 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 
-/* =====================================================================
-   OPEN
-   ===================================================================== */
 openEl.addEventListener('click', () => {
   document.body.classList.add('opened');
   uiEl.classList.remove('show');
