@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bloom</title>
+<style>
+  :root{
+    --fg:#f6ebef;
+    --dim:#8d7c86;
+    --accent:#ff6f9c;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:#000;}
+  body{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color:var(--fg);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  #c{
+    position:fixed; inset:0; display:block;
+    transition:opacity 1.6s ease;
+    pointer-events:none;
+  }
+  body.opened #c{ opacity:.18; }
+
+  /* ---------- Open button ---------- */
+  #ui{
+    position:fixed; inset:0;
+    display:grid; place-items:center;
+    opacity:0; pointer-events:none;
+    transition:opacity 1.4s ease;
+    z-index:5;
+  }
+  #ui.show{ opacity:1; pointer-events:auto; }
+
+  #open{
+    appearance:none;
+    background:rgba(255,80,140,.03);
+    color:#ffd9e4;
+    border:1px solid rgba(255,120,160,.35);
+    border-radius:999px;
+    padding:15px 46px;
+    font:inherit;
+    font-size:13px;
+    letter-spacing:.42em;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:all .45s cubic-bezier(.2,.8,.2,1);
+    box-shadow:0 0 34px rgba(255,80,140,.12), inset 0 0 22px rgba(255,80,140,.05);
+    backdrop-filter:blur(3px);
+  }
+  #open:hover, #open:focus-visible{
+    outline:none;
+    color:#fff;
+    border-color:rgba(255,160,195,.9);
+    letter-spacing:.55em;
+    background:rgba(255,80,140,.07);
+    box-shadow:0 0 60px rgba(255,80,140,.4), inset 0 0 34px rgba(255,80,140,.13);
+  }
+
+  /* ---------- Bio ---------- */
+  #bio{
+    position:fixed; inset:0;
+    display:grid; place-items:center;
+    opacity:0; pointer-events:none;
+    transition:opacity 1.6s ease .25s;
+    z-index:4;
+    padding:32px;
+  }
+  body.opened #bio{ opacity:1; pointer-events:auto; }
+
+  .inner{
+    text-align:center;
+    max-width:520px;
+    transform:translateY(14px);
+    transition:transform 1.6s cubic-bezier(.2,.8,.2,1) .25s;
+  }
+  body.opened .inner{ transform:translateY(0); }
+
+  .inner h1{
+    margin:0 0 18px;
+    font-size:clamp(26px,5vw,40px);
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:lowercase;
+    color:#fff;
+    text-shadow:0 0 40px rgba(255,110,150,.35);
+  }
+  .tag{
+    margin:0 0 46px;
+    font-size:12px;
+    letter-spacing:.42em;
+    text-transform:uppercase;
+    color:var(--dim);
+  }
+  nav{
+    display:flex; gap:26px; justify-content:center; flex-wrap:wrap;
+  }
+  nav a{
+    color:var(--fg);
+    text-decoration:none;
+    font-size:12px;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    padding-bottom:5px;
+    border-bottom:1px solid rgba(255,120,160,.18);
+    transition:all .35s ease;
+    opacity:.75;
+  }
+  nav a:hover{
+    opacity:1;
+    color:#fff;
+    border-bottom-color:var(--accent);
+    text-shadow:0 0 20px rgba(255,110,150,.7);
+  }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div id="ui"><button id="open">Open</button></div>
+
+<main id="bio">
+  <div class="inner">
+    <h1>имя</h1>
+    <p class="tag">let it bloom</p>
+    <nav>
+      <a href="#" target="_blank" rel="noopener">telegram</a>
+      <a href="#" target="_blank" rel="noopener">github</a>
+      <a href="mailto:">mail</a>
+    </nav>
+  </div>
+</main>
+
+<script>
+(() => {
+"use strict";
+
+/* =====================================================================
+   CONSTANTS
+   ===================================================================== */
+const DURATION   = 10.0;
+const MESSAGE    = "let it bloom ";
+const TYPED      = "bloom()";
+const RAMP       = ".:;=+*xo%#&@";
+const GLITCH     = "01<>{}[]#$%&*+=?!ABXZ";
+const ELEV       = 55 * Math.PI / 180;
+const BLOW_START = 7.6;
+const RAD6       = 6 * Math.PI / 180;
+
+const LAYERS = [
+  [6, 1.00, 0.34, 80, 2.0, 5.2, 0.70, 0.00,      1.00],
+  [6, 0.80, 0.30, 58, 2.3, 5.5, 0.50, Math.PI/6, 0.95],
+  [5, 0.62, 0.27, 40, 2.6, 5.8, 0.35, 0.30,      0.90],
+  [4, 0.46, 0.24, 26, 2.9, 6.1, 0.20, 0.90,      0.85],
+];
+
+const STOPS = [
+  [0.70, 0.02, 0.20],
+  [1.00, 0.12, 0.38],
+  [1.00, 0.42, 0.62],
+  [1.00, 0.80, 0.84],
+];
+
+/* =====================================================================
+   RNG
+   ===================================================================== */
+let _seed = 11;
+function rnd(){
+  _seed |= 0; _seed = _seed + 0x6D2B79F5 | 0;
+  let t = Math.imul(_seed ^ _seed >>> 15, 1 | _seed);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
+function uni(a,b){ return a + (b-a)*rnd(); }
+function nrand(){
+  let u = 0, v = 0;
+  while(u === 0) u = rnd();
+  while(v === 0) v = rnd();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(6.283185307179586*v);
+}
+let _seed2 = 5;
+function rnd2(){
+  _seed2 |= 0; _seed2 = _seed2 + 0x6D2B79F5 | 0;
+  let t = Math.imul(_seed2 ^ _seed2 >>> 15, 1 | _seed2);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296;
+}
+
+/* =====================================================================
+   MATH
+   ===================================================================== */
+const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
+function smoothstep(a,b,x){
+  const k = clamp01((x-a)/(b-a));
+  return k*k*(3-2*k);
+}
+
+/* =====================================================================
+   PETAL DATA
+   ===================================================================== */
+const pet = { theta:[], L:[], W:[], open:[], t0:[], t1:[], curl:[], tint:[], delay:[] };
+LAYERS.forEach(([n,L,Wd,op,t0,t1,curl,az,tint], li) => {
+  for(let k=0;k<n;k++){
+    pet.theta.push(az + 2*Math.PI*k/n + uni(-0.08,0.08));
+    pet.L.push(L * uni(0.95,1.05));
+    pet.W.push(Wd);
+    pet.open.push(op * Math.PI/180);
+    pet.t0.push(t0 + uni(-0.1,0.1));
+    pet.t1.push(t1);
+    pet.curl.push(curl);
+    pet.tint.push(tint * uni(0.8,1.1));
+    pet.delay.push(BLOW_START + 0.22*li + uni(0,0.35));
+  }
+});
+
+const P     = pet.theta.length;
+const pTheta = Float32Array.from(pet.theta);
+const pL     = Float32Array.from(pet.L);
+const pW     = Float32Array.from(pet.W);
+const pOpen  = Float32Array.from(pet.open);
+const pT0    = Float32Array.from(pet.t0);
+const pT1    = Float32Array.from(pet.t1);
+const pCurl  = Float32Array.from(pet.curl);
+const pTint  = Float32Array.from(pet.tint);
+const pDelay = Float32Array.from(pet.delay);
+
+/* =====================================================================
+   GRID / POINT RESOLUTION
+   ===================================================================== */
+const U  = 40;   // petal segments along length
+const V  = 28;   // petal segments across width
+const NC = 1400; // centre particles
+const GS = U*V;
+const NP = P*GS + NC;
+
+/* =====================================================================
+   POINT BUFFERS
+   ===================================================================== */
+const PX  = new Float32Array(NP), PY  = new Float32Array(NP), PZ  = new Float32Array(NP);
+const NXa = new Float32Array(NP), NYa = new Float32Array(NP), NZa = new Float32Array(NP);
+const CR  = new Float32Array(NP), CG  = new Float32Array(NP), CB  = new Float32Array(NP);
+const DEL = new Float32Array(NP);
+const JX  = new Float32Array(NP), JY  = new Float32Array(NP), JZ  = new Float32Array(NP);
+const AOa = new Float32Array(NP);
+const PID = new Int32Array(NP);
+
+/* --- static per-point data (petals) --- */
+(function initPetalPoints(){
+  let idx = 0;
+  for(let p=0;p<P;p++){
+    const tint = pTint[p], delay = pDelay[p];
+    for(let i=0;i<U;i++){
+      const u = i/(U-1);
+
+      const cu = u * (STOPS.length - 1);
+      const i0 = Math.min(Math.floor(cu), STOPS.length - 2);
+      const fr = cu - i0;
+      const s0 = STOPS[i0], s1 = STOPS[i0+1];
+      const rr = (s0[0]*(1-fr) + s1[0]*fr) * tint;
+      const gg = (s0[1]*(1-fr) + s1[1]*fr) * tint;
+      const bb = (s0[2]*(1-fr) + s1[2]*fr) * tint;
+      const aoU = 0.25 + 0.75 * Math.pow(u, 0.8);
+
+      for(let j=0;j<V;j++){
+        const v = -1 + 2*j/(V-1);
+        CR[idx] = rr; CG[idx] = gg; CB[idx] = bb;
+        AOa[idx] = aoU * (1 - 0.35*Math.abs(v*v*v));
+        DEL[idx] = delay;
+        JX[idx] = nrand()*0.6; JY[idx] = nrand()*0.6; JZ[idx] = nrand()*0.9;
+        PID[idx] = Math.floor(rnd()*10000);
+        idx++;
+      }
+    }
+  }
+})();
+
+/* --- centre particles --- */
+const C_R = new Float32Array(NC);
+const C_A = new Float32Array(NC);
+const C_DELAY = BLOW_START + 1.15;
+(function initCentre(){
+  const base = P*GS;
+  for(let k=0;k<NC;k++){
+    const r = Math.sqrt((k+0.5)/NC);
+    C_R[k] = r;
+    C_A[k] = k * 2.39996323;
+
+    const a = 1 - r, b = r;
+    CR[base+k] = 1.0*a + 1.0*b;
+    CG[base+k] = 0.85*a + 0.45*b;
+    CB[base+k] = 0.35*a + 0.08*b;
+
+    AOa[base+k] = 1;
+    DEL[base+k] = C_DELAY;
+    JX[base+k] = nrand()*0.5; JY[base+k] = nrand()*0.5; JZ[base+k] = nrand()*0.9;
+    PID[base+k] = Math.floor(rnd()*10000);
+  }
+})();
+
+/* =====================================================================
+   LIGHT / CAMERA
+   ===================================================================== */
+const CDY = -Math.cos(ELEV), CDZ = Math.sin(ELEV);   // CAM_D = (0, CDY, CDZ)
+const CUY =  Math.sin(ELEV), CUZ = Math.cos(ELEV);   // CAM_UP = (0, CUY, CUZ)
+
+let LX, LY, LZ, HX, HY, HZ;
+(function initLight(){
+  let lx=-0.45, ly=-0.75, lz=0.9;
+  let ln = Math.hypot(lx,ly,lz);
+  lx/=ln; ly/=ln; lz/=ln;
+  LX=lx; LY=ly; LZ=lz;
+  let hx = lx + 0, hy = ly + CDY, hz = lz + CDZ;
+  ln = Math.hypot(hx,hy,hz);
+  HX=hx/ln; HY=hy/ln; HZ=hz/ln;
+})();
+
+/* =====================================================================
+   CANVAS / GRID STATE
+   ===================================================================== */
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', { alpha:false });
+
+let W, H, dpr, FS, cw, ch, COLS, ROWS, CY, SCALE;
+let gL, gD, gR, gG, gB, gF, gP, gHas, gFirst, gChars, gColr;
+let MSG_GRID, LETTERS;
+let glowA, glowACtx, glowB, glowBCtx;
+
+function resize(){
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth;
+  H = window.innerHeight;
+
+  canvas.width  = Math.max(1, Math.floor(W*dpr));
+  canvas.height = Math.max(1, Math.floor(H*dpr));
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  FS  = Math.max(10, Math.min(20, Math.round(Math.min(W,H)/52)));
+  cw  = FS * 0.6;
+  ch  = FS * 1.15;
+  COLS = Math.max(20, Math.floor(W / cw));
+  ROWS = Math.max(20, Math.floor(H / ch));
+
+  CY    = H * 0.56;
+  SCALE = 0.35 * Math.min(H, W * 0.85);
+
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.font = `700 ${FS}px ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace`;
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+
+  const N = ROWS*COLS;
+  gL = new Float32Array(N);
+  gD = new Float32Array(N);
+  gR = new Float32Array(N);
+  gG = new Float32Array(N);
+  gB = new Float32Array(N);
+  gF = new Uint8Array(N);
+  gP = new Int32Array(N);
+  gHas = new Uint8Array(N);
+  gFirst = new Float32Array(N).fill(Infinity);
+  gChars = new Array(N);
+  gColr = new Uint32Array(N);
+
+  MSG_GRID = new Array(N);
+  for(let r=0;r<ROWS;r++)
+    for(let c=0;c<COLS;c++)
+      MSG_GRID[r*COLS+c] = MESSAGE[(r*COLS + c) % MESSAGE.length];
+
+  LETTERS = MESSAGE.split('').filter(c => c !== ' ');
+
+  // glow buffers
+  glowA = document.createElement('canvas');
+  glowA.width  = Math.max(1, Math.floor(W/5));
+  glowA.height = Math.max(1, Math.floor(H/5));
+  glowACtx = glowA.getContext('2d');
+
+  glowB = document.createElement('canvas');
+  glowB.width  = Math.max(1, Math.floor(W/18));
+  glowB.height = Math.max(1, Math.floor(H/18));
+  glowBCtx = glowB.getContext('2d');
+}
+
+/* =====================================================================
+   GEOMETRY SCRATCH
+   ===================================================================== */
+const tgx = new Float32Array(GS);
+const tgy = new Float32Array(GS);
+const tgz = new Float32Array(GS);
+const rhoArr = new Float32Array(U);
+const zArr   = new Float32Array(U);
+const phiArr = new Float32Array(U);
+const wArr   = new Float32Array(U);
+
+/* =====================================================================
+   BUILD PETAL POINTS
+   ===================================================================== */
+function buildPetals(t){
+  const du = 1/(U-1);
+  let base = 0;
+
+  for(let p=0;p<P;p++){
+    const prog  = smoothstep(pT0[p], pT1[p], t);
+    const alpha = RAD6 + (pOpen[p] - RAD6) * prog;
+    const curl  = pCurl[p] * prog;
+    const Lp    = pL[p];
+    const Wp    = pW[p];
+    const th    = pTheta[p];
+    const cth   = Math.cos(th), sth = Math.sin(th);
+
+    let rho = 0, zc = 0;
+    for(let i=0;i<U;i++){
+      const u   = i*du;
+      const phi = alpha*(0.25 + 0.75*u) + curl*u*u;
+      const sp  = Math.sin(phi), cp = Math.cos(phi);
+      rho += sp*du*Lp;
+      zc  += cp*du*Lp;
+      rhoArr[i] = rho; zArr[i] = zc; phiArr[i] = phi;
+      const sw = Math.sin(Math.PI * Math.pow(u, 1.6));
+      wArr[i] = Wp * Math.pow(sw > 0 ? sw : 0, 0.7);
+    }
+
+    for(let i=0;i<U;i++){
+      const phi = phiArr[i], cp = Math.cos(phi), sp = Math.sin(phi);
+      const w = wArr[i], rr = rhoArr[i], zz = zArr[i];
+      const row = i*V;
+      for(let j=0;j<V;j++){
+        const v = -1 + 2*j/(V-1);
+        const off_t = v*w;
+        const off_n = 0.55*v*v*w;
+        const R = 0.04 + rr - off_n*cp;
+        const Z = zz + off_n*sp;
+        tgx[row+j] = R*cth - off_t*sth;
+        tgy[row+j] = R*sth + off_t*cth;
+        tgz[row+j] = Z;
+      }
+    }
+
+    for(let i=0;i<U;i++){
+      const i0 = i > 0 ? i-1 : 0;
+      const i1 = i < U-1 ? i+1 : U-1;
+      for(let j=0;j<V;j++){
+        const j0 = j > 0 ? j-1 : 0;
+        const j1 = j < V-1 ? j+1 : V-1;
+
+        const a = i1*V + j, b = i0*V + j;
+        const c = i*V + j1, d = i*V + j0;
+
+        const ux = tgx[a]-tgx[b], uy = tgy[a]-tgy[b], uz = tgz[a]-tgz[b];
+        const vx = tgx[c]-tgx[d], vy = tgy[c]-tgy[d], vz = tgz[c]-tgz[d];
+
+        let nx = uy*vz - uz*vy;
+        let ny = uz*vx - ux*vz;
+        let nz = ux*vy - uy*vx;
+        const ln = Math.sqrt(nx*nx+ny*ny+nz*nz) || 1e-9;
+
+        const gi = base + i*V + j;
+        const ii = i*V + j;
+        PX[gi] = tgx[ii]; PY[gi] = tgy[ii]; PZ[gi] = tgz[ii];
+        NXa[gi] = nx/ln; NYa[gi] = ny/ln; NZa[gi] = nz/ln;
+      }
+    }
+    base += GS;
+  }
+}
+
+/* =====================================================================
+   BUILD CENTRE POINTS
+   ===================================================================== */
+function buildCentre(t){
+  const base = P*GS;
+  const open = smoothstep(3, 5.5, t);
+  const rc = 0.17 * open;
+
+  for(let k=0;k<NC;k++){
+    const r = C_R[k]*rc;
+    const ca = Math.cos(C_A[k]), sa = Math.sin(C_A[k]);
+    PX[base+k] = r*ca;
+    PY[base+k] = r*sa;
+    PZ[base+k] = 0.10 + 0.10*(1 - C_R[k]*C_R[k])*open;
+
+    let nx = ca*C_R[k]*0.7, ny = sa*C_R[k]*0.7, nz = 1;
+    const ln = Math.sqrt(nx*nx+ny*ny+nz*nz);
+    NXa[base+k] = nx/ln; NYa[base+k] = ny/ln; NZa[base+k] = nz/ln;
+  }
+}
+
+/* =====================================================================
+   RASTERIZE
+   ===================================================================== */
+function rasterize(t){
+  buildPetals(t);
+  buildCentre(t);
+
+  const s = smoothstep(0.9, 2.6, t) *
+            (1 + 0.02*Math.sin(2*Math.PI*(t-6)/2.4) * smoothstep(6, 6.8, t));
+  if(s <= 0) return false;
+
+  gL.fill(0); gD.fill(-1e9); gF.fill(0); gP.fill(0); gHas.fill(0);
+
+  const yaw = 0.4 + 0.32*t;
+  const cyw = Math.cos(yaw), syw = Math.sin(yaw);
+
+  const WX = 1.7, WZ = 0.75;
+  const halfW = W*0.5;
+
+  for(let i=0;i<NP;i++){
+    const tau = t - DEL[i];
+    const tt  = tau > 0 ? tau : 0;
+    const brk = tt > 0.3 ? tt - 0.3 : 0;
+    const b15 = brk > 0 ? Math.pow(brk, 1.5)*0.9 : 0;
+    const k1  = 1.5*tt*tt;
+
+    const px = PX[i]*s, py = PY[i]*s, pz = PZ[i]*s;
+    let x = px*cyw - py*syw + WX*k1 + JX[i]*b15;
+    let y = px*syw + py*cyw          + JY[i]*b15;
+    let z = pz          + WZ*k1 + JZ[i]*b15;
+    z += 0.1*Math.sin(tt*5 + (PID[i]%7))*brk;
+
+    const keep = (brk === 0) || (PID[i] % 9 === 0);
+    const fade = (tt < 1.5 ? 1 - tt/1.5 : 0) * (keep ? 1 : 0);
+    if(fade <= 0) continue;
+
+    let nx = NXa[i]*cyw - NYa[i]*syw;
+    let ny = NXa[i]*syw + NYa[i]*cyw;
+    let nz = NZa[i];
+
+    let nd = nx*0 + ny*CDY + nz*CDZ;
+    if(nd < 0){ nx = -nx; ny = -ny; nz = -nz; nd = -nd; }
+
+    const depth = x*0 + y*CDY + z*CDZ;
+
+    const diff = Math.max(nx*LX + ny*LY + nz*LZ, 0);
+    const sp   = Math.max(nx*HX + ny*HY + nz*HZ, 0);
+    const spec = Math.pow(sp, 24);
+
+    const lum = (0.25 + 0.95*diff + 0.3*(1-nd)*(1-nd)) * (0.35 + 0.65*AOa[i]);
+    let dof = 0.55 + 0.45 * clamp01((depth + 0.8)/1.6);
+    const f = dof * fade;
+
+    const rr = (CR[i]*lum*1.2 + 0.45*spec) * f;
+    const gg = (CG[i]*lum*1.2 + 0.45*spec) * f;
+    const bb = (CB[i]*lum*1.2 + 0.45*spec) * f;
+    let lumt = (lum + 0.45*spec) * f;
+    lumt = lumt < 0 ? 0 : lumt > 1 ? 1 : lumt;
+
+    const k  = 5 / (5 - depth);
+    const sx = x*k;
+    const sy = (y*CUY + z*CUZ)*k;
+
+    const col = Math.floor((halfW + sx*SCALE)/cw);
+    const row = Math.floor((CY  - sy*SCALE)/ch);
+
+    if(col < 0 || col >= COLS || row < 0 || row >= ROWS) continue;
+
+    const cell = row*COLS + col;
+    if(depth <= gD[cell]) continue;
+
+    gD[cell] = depth;
+    gL[cell] = lumt;
+    gR[cell] = rr;
+    gG[cell] = gg;
+    gB[cell] = bb;
+    gF[cell] = brk > 0 ? 1 : 0;
+    gP[cell] = PID[i];
+    gHas[cell] = 1;
+  }
+  return true;
+}
+
+/* =====================================================================
+   EDGE DETECTION
+   ===================================================================== */
+function F(r,c){
+  if(r < 0 || r >= ROWS || c < 0 || c >= COLS) return -3.0;
+  const i = r*COLS + c;
+  return gHas[i] ? gD[i] : -3.0;
+}
+
+const EDGE_CH = new Array(ROWS*COLS);
+
+function computeEdges(){
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const i = r*COLS + c;
+      if(!gHas[i]){ EDGE_CH[i] = null; continue; }
+
+      const f  = gD[i];
+      const fr = F(r,c+1), fl = F(r,c-1), fd = F(r+1,c), fu = F(r-1,c);
+
+      const j1 = Math.abs(f-fr), j2 = Math.abs(f-fl),
+            j3 = Math.abs(f-fd), j4 = Math.abs(f-fu);
+      let jump = j1 > j2 ? j1 : j2; if(j3 > jump) jump = j3; if(j4 > jump) jump = j4;
+
+      const mx = Math.max(fr, fl, fd, fu);
+      const isEdge = (jump > 0.35) && ((jump > 2.0) || (f >= mx));
+
+      if(!isEdge){ EDGE_CH[i] = null; continue; }
+
+      const gx = (fr - fl) / cw;
+      const gy = (fd - fu) / ch;
+      let a = Math.atan2(-gx, -gy) * 180 / Math.PI;
+      a = ((a % 180) + 180) % 180;
+
+      EDGE_CH[i] = (a < 22.5 || a >= 157.5) ? "-"
+                 : (a < 67.5)  ? "/"
+                 : (a < 112.5) ? "|"
+                 : "\\";
+    }
+  }
+}
+
+/* =====================================================================
+   TEXT LAYER (bloom() typing)
+   ===================================================================== */
+const txtOut = [];
+function textLayer(t){
+  txtOut.length = 0;
+  const row = Math.floor(CY/ch);
+  const blink = ((t*2.2) % 1) < 0.55;
+  const c0 = (COLS >> 1) - (TYPED.length >> 1);
+
+  if(t < 0.3){
+    if(blink) txtOut.push(["_", COLS >> 1, row, "rgb(220,230,255)"]);
+  } else if(t < 0.85){
+    const n = Math.floor((t-0.3)/0.55 * TYPED.length) + 1;
+    const s = TYPED.slice(0, n) + "_";
+    for(let i=0;i<s.length;i++)
+      txtOut.push([s[i], c0+i, row, "rgb(220,230,255)"]);
+  } else if(t < 1.3){
+    const f = 1 - (t-0.85)/0.45;
+    for(let i=0;i<TYPED.length;i++){
+      let ch = TYPED[i];
+      if(rnd2() < 0.6) ch = GLITCH[Math.floor(rnd2()*GLITCH.length)];
+      if(rnd2() < f){
+        const v = Math.floor(255*f);
+        txtOut.push([ch, c0+i, row,
+          `rgb(${v},${Math.floor(v*0.6)},${Math.floor(v*0.75)})`]);
+      }
+    }
+  } else if(t > 9.35 && blink){
+    txtOut.push(["_", COLS >> 1, row, "rgb(220,230,255)"]);
+  }
+}
+
+/* =====================================================================
+   DRAW FRAME
+   ===================================================================== */
+const colorBuckets = new Map();
+
+function drawFrame(t){
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  const ok = rasterize(t);
+
+  if(ok){
+    computeEdges();
+
+    for(let i=0;i<ROWS*COLS;i++){
+      if(!gHas[i]) continue;
+
+      const L = gL[i];
+      if(L <= 0.03) continue;
+
+      let ch;
+      if(gF[i]){
+        ch = LETTERS[gP[i] % LETTERS.length];
+      } else {
+        let li = Math.floor(L * (RAMP.length - 1));
+        if(li < 0) li = 0; else if(li >= RAMP.length) li = RAMP.length - 1;
+        ch = RAMP[li];
+        if(L > 0.86) ch = MSG_GRID[i];
+        const e = EDGE_CH[i];
+        if(e) ch = e;
+      }
+
+      // colour
+      let r = gR[i], g = gG[i], b = gB[i];
+      if(!gF[i] && EDGE_CH[i]){
+        r = r*1.25 + 0.06; g = g*1.25 + 0.06; b = b*1.25 + 0.06;
+      }
+
+      // settle glitch
+      if(t < 5.5){
+        if(gFirst[i] === Infinity) gFirst[i] = t;
+        if(t - gFirst[i] < 0.12 + ((i*7919) % 1000)/1000 * 0.5){
+          ch = GLITCH[Math.floor(rnd2()*GLITCH.length)];
+          r = r*0.5 + 0.45; g = g*0.5 + 0.45; b = b*0.5 + 0.45;
+        }
+      }
+
+      if(ch === ' ' || ch === undefined) continue;
+
+      r = Math.min(1, Math.max(0, r));
+      g = Math.min(1, Math.max(0, g));
+      b = Math.min(1, Math.max(0, b));
+
+      const R = (r*255/10|0)*10;
+      const G = (g*255/10|0)*10;
+      const B = (b*255/10|0)*10;
+      if(R === 0 && G === 0 && B === 0) continue;
+
+      gChars[i] = ch;
+      gColr[i] = (R << 16) | (G << 8) | B;
+    }
+
+    // group by colour
+    colorBuckets.clear();
+    for(let i=0;i<ROWS*COLS;i++){
+      if(!gHas[i] || gL[i] <= 0.03 || gChars[i] === undefined) continue;
+      const c = gColr[i];
+      let arr = colorBuckets.get(c);
+      if(!arr){ arr = []; colorBuckets.set(c, arr); }
+      arr.push(i);
+    }
+
+    colorBuckets.forEach((arr, col) => {
+      ctx.fillStyle = 'rgb(' + ((col>>16)&255) + ',' + ((col>>8)&255) + ',' + (col&255) + ')';
+      for(let n=0;n<arr.length;n++){
+        const i = arr[n];
+        const r = (i / COLS) | 0;
+        const c = i - r*COLS;
+        ctx.fillText(gChars[i], c*cw, r*ch);
+      }
+    });
+
+    // reset first_on for empty cells
+    for(let i=0;i<ROWS*COLS;i++) if(!gHas[i]) gFirst[i] = Infinity;
+  }
+
+  // typed text
+  textLayer(t);
+  if(txtOut.length){
+    ctx.fillStyle = '#dce6ff';
+    for(let i=0;i<txtOut.length;i++){
+      const o = txtOut[i];
+      ctx.fillStyle = o[3];
+      ctx.fillText(o[0], o[1]*cw, o[2]*ch);
+    }
+  }
+
+  // glow
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalCompositeOperation = 'lighter';
+
+  glowACtx.clearRect(0,0,glowA.width,glowA.height);
+  glowACtx.drawImage(canvas, 0,0, canvas.width, canvas.height, 0,0, glowA.width, glowA.height);
+  ctx.drawImage(glowA, 0,0, glowA.width, glowA.height, 0,0, canvas.width, canvas.height);
+
+  glowBCtx.clearRect(0,0,glowB.width,glowB.height);
+  glowBCtx.drawImage(canvas, 0,0, canvas.width, canvas.height, 0,0, glowB.width, glowB.height);
+  ctx.drawImage(glowB, 0,0, glowB.width, glowB.height, 0,0, canvas.width, canvas.height);
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.restore();
+}
+
+/* =====================================================================
+   MAIN LOOP
+   ===================================================================== */
+resize();
+window.addEventListener('resize', () => { resize(); });
+
+const uiEl   = document.getElementById('ui');
+const openEl = document.getElementById('open');
+
+let elapsed = 0;
+let last = performance.now();
+let lastT = 0;
+let openShown = false;
+
+function loop(now){
+  let dt = (now - last) / 1000;
+  last = now;
+  if(dt > 0.1) dt = 0.1;
+
+  elapsed += dt;
+  const t = elapsed % DURATION;
+
+  if(t < lastT) gFirst.fill(Infinity);
+  lastT = t;
+
+  drawFrame(t);
+
+  if(!openShown && elapsed >= DURATION){
+    openShown = true;
+    uiEl.classList.add('show');
+  }
+
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* =====================================================================
+   OPEN
+   ===================================================================== */
+openEl.addEventListener('click', () => {
+  document.body.classList.add('opened');
+  uiEl.classList.remove('show');
+  setTimeout(() => { uiEl.style.display = 'none'; }, 1500);
+});
+
+})();
+</script>
+</body>
+</html>
