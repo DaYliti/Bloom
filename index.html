@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>bloom()</title>
+    <!-- СЮДА ВСТАВИШЬ СВОЮ ИКОНКУ -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>!</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
 
@@ -11,7 +13,7 @@
         
         body, html {
             width: 100%; height: 100%;
-            background-color: #030303;
+            background-color: #050505;
             color: #fff;
             font-family: 'JetBrains Mono', monospace;
             overflow: hidden;
@@ -51,32 +53,49 @@
             position: fixed; inset: 0; z-index: 1; pointer-events: none;
         }
 
-        /* --- ЦЕНТРАЛЬНОЕ ЯДРО (Семя) --- */
-        #core-seed {
+        /* --- ЦЕНТРАЛЬНЫЙ ЦВЕТОК --- */
+        #core-flower {
             position: fixed; top: 50%; left: 50%;
-            width: 20px; height: 20px;
-            background: #ff6b9e;
-            border-radius: 50%;
+            width: 40px; height: 40px;
             transform: translate(-50%, -50%) scale(0);
-            z-index: 10;
-            cursor: pointer;
-            box-shadow: 0 0 30px #ff6b9e, 0 0 60px #ff6b9e;
-            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s;
+            z-index: 10; cursor: pointer;
             pointer-events: none;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s;
+            display: flex; justify-content: center; align-items: center;
         }
         
-        body.site-opened #core-seed {
+        body.site-opened #core-flower {
             transform: translate(-50%, -50%) scale(1);
             pointer-events: auto;
-            animation: pulse 2s infinite alternate;
+            animation: flowerPulse 2s infinite alternate;
         }
 
-        @keyframes pulse {
-            0% { box-shadow: 0 0 20px #ff6b9e, 0 0 40px #ff6b9e; }
-            100% { box-shadow: 0 0 40px #ff6b9e, 0 0 80px #ff6b9e; }
+        /* Лепетки цветка на CSS */
+        .petal-core {
+            position: absolute;
+            width: 16px; height: 24px;
+            background: #ff6b9e;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            box-shadow: 0 0 15px #ff6b9e;
+            transform-origin: 50% 100%;
+        }
+        .petal-core:nth-child(1) { transform: rotate(0deg) translateY(-10px); }
+        .petal-core:nth-child(2) { transform: rotate(60deg) translateY(-10px); }
+        .petal-core:nth-child(3) { transform: rotate(120deg) translateY(-10px); }
+        .petal-core:nth-child(4) { transform: rotate(180deg) translateY(-10px); }
+        .petal-core:nth-child(5) { transform: rotate(240deg) translateY(-10px); }
+        .petal-core:nth-child(6) { transform: rotate(300deg) translateY(-10px); }
+        .core-center {
+            width: 12px; height: 12px; background: #fff; border-radius: 50%; z-index: 2;
+            box-shadow: 0 0 10px #fff;
         }
 
-        /* --- ОРБИТАЛЬНАЯ СИСТЕМА --- */
+        @keyframes flowerPulse {
+            0% { filter: drop-shadow(0 0 10px #ff6b9e); transform: translate(-50%, -50%) scale(0.9) rotate(0deg); }
+            100% { filter: drop-shadow(0 0 25px #ff6b9e); transform: translate(-50%, -50%) scale(1.1) rotate(15deg); }
+        }
+
+        /* --- ОРБИТАЛЬНАЯ СИСТЕМА (Хаос) --- */
         #orbit-system {
             position: fixed; top: 50%; left: 50%;
             width: 0; height: 0;
@@ -84,40 +103,43 @@
             opacity: 0; transition: opacity 1s ease;
         }
         body.bloomed #orbit-system { opacity: 1; }
-        body.bloomed #core-seed { transform: translate(-50%, -50%) scale(0); opacity: 0; pointer-events: none; }
+        body.bloomed #core-flower { transform: translate(-50%, -50%) scale(0); opacity: 0; pointer-events: none; }
 
         .node {
             position: absolute;
             top: 0; left: 0;
-            width: 60px; height: 60px;
-            margin: -30px 0 0 -30px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
+            width: 70px; height: 70px;
+            margin: -35px 0 0 -35px;
+            background: rgba(20,20,20,0.8);
+            border: 1px solid rgba(255,255,255,0.2); /* Белая рамка */
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            font-size: 11px; letter-spacing: 1px; color: #aaa;
+            font-size: 11px; letter-spacing: 1px; color: #fff;
             cursor: crosshair;
             transition: all 0.3s ease;
             backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(255,255,255,0.05); /* Легкая подсветка */
+            /* Отключаем вращение внутри узла */
+            transform-origin: center center;
         }
 
         .node:hover {
             border-color: #ff6b9e;
-            color: #fff;
+            color: #ff6b9e;
             background: rgba(255,107,158,0.1);
-            box-shadow: 0 0 20px rgba(255,107,158,0.4);
-            transform: scale(1.1);
+            box-shadow: 0 0 25px rgba(255,107,158,0.6);
+            transform: scale(1.15); /* При наведении узел увеличивается */
         }
 
-        /* Инфо-панель при клике на узел */
+        /* --- ИНФО-ПАНЕЛЬ --- */
         #info-panel {
             position: fixed;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%) scale(0.9);
-            width: 400px; max-width: 90%;
-            background: rgba(10,10,10,0.9);
+            width: 360px; max-width: 90%;
+            background: rgba(10,10,10,0.95);
             border: 1px solid rgba(255,107,158,0.3);
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 30px;
             text-align: center;
             z-index: 20;
@@ -127,12 +149,32 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
         }
         #info-panel.active { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
-        #info-panel h2 { color: #ff6b9e; font-size: 1.2rem; margin-bottom: 15px; letter-spacing: 2px;}
-        #info-panel p { color: #ccc; font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;}
-        #close-info { background: none; border: 1px solid #555; color: #888; padding: 8px 20px; cursor: pointer; font-family: inherit; font-size: 0.8rem; transition: 0.3s;}
-        #close-info:hover { border-color: #fff; color: #fff; }
+        
+        #info-title { color: #ff6b9e; font-size: 1.1rem; margin-bottom: 10px; letter-spacing: 2px; }
+        #info-desc { color: #ccc; font-size: 0.85rem; line-height: 1.6; margin-bottom: 20px; white-space: pre-wrap; }
+        
+        .action-btn {
+            display: inline-block;
+            background: transparent;
+            border: 1px solid #555;
+            color: #aaa;
+            padding: 8px 16px;
+            margin: 5px;
+            font-family: inherit; font-size: 0.75rem;
+            cursor: pointer; transition: 0.3s; border-radius: 3px;
+            text-decoration: none;
+        }
+        .action-btn:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.1); }
+        .action-btn.copy:hover { border-color: #ff6b9e; color: #ff6b9e; background: rgba(255,107,158,0.1); }
 
-        /* --- ПИКСЕЛЬНЫЙ КОТ (Пасхалка) --- */
+        #close-info { 
+            background: none; border: none; color: #666; 
+            font-size: 0.7rem; cursor: pointer; margin-top: 15px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        #close-info:hover { color: #fff; }
+
+        /* --- ПИКСЕЛЬНЫЙ КОТ --- */
         #pixel-cat {
             position: fixed; bottom: 20px; right: 20px;
             color: #555; font-size: 12px; line-height: 1.2;
@@ -140,22 +182,10 @@
             transition: color 0.3s, transform 0.3s;
         }
         #pixel-cat:hover { color: #ff6b9e; transform: scale(1.1); }
-
-        /* --- АУДИО ПЛЕЕР (Заглушка) --- */
-        #audio-widget {
-            position: fixed; bottom: 20px; left: 20px;
-            display: flex; align-items: center; gap: 15px;
-            z-index: 50; opacity: 0.6; transition: opacity 0.3s;
-        }
-        #audio-widget:hover { opacity: 1; }
-        .bars { display: flex; gap: 3px; height: 20px; align-items: flex-end; }
-        .bar { width: 3px; background: #ff6b9e; height: 5px; }
-        .track-info { font-size: 10px; color: #888; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
-    <!-- ИНТРО -->
     <div id="intro-screen">
         <video id="intro-video" src="Intro.mp4" autoplay muted playsinline></video>
         <button id="enter-btn">Enter Void</button>
@@ -163,43 +193,63 @@
 
     <canvas id="bg-canvas"></canvas>
 
-    <!-- Семя в центре -->
-    <div id="core-seed"></div>
+    <!-- Центральный цветок (семя) -->
+    <div id="core-flower">
+        <div class="petal-core"></div>
+        <div class="petal-core"></div>
+        <div class="petal-core"></div>
+        <div class="petal-core"></div>
+        <div class="petal-core"></div>
+        <div class="petal-core"></div>
+        <div class="core-center"></div>
+    </div>
 
-    <!-- Орбитальные узлы -->
+    <!-- Узлы (орбиты) -->
     <div id="orbit-system">
-        <div class="node" style="transform: translate(150px, 0);" onclick="showInfo('me')">INFO</div>
-        <div class="node" style="transform: translate(-150px, 0);" onclick="showInfo('tg')">TG</div>
-        <div class="node" style="transform: translate(0, 150px);" onclick="showInfo('dc')">DC</div>
-        <div class="node" style="transform: translate(0, -150px);" onclick="showInfo('games')">GAMES</div>
-        <div class="node" style="transform: translate(106px, -106px);" onclick="showInfo('steam')">STEAM</div>
-        <div class="node" style="transform: translate(-106px, 106px);" onclick="showInfo('tiktok')">TT</div>
+        <!-- Примечание: координаты задаются через JS для хаоса -->
+        <div class="node" data-target="me">INFO</div>
+        <div class="node" data-target="tg">TG</div>
+        <div class="node" data-target="dc">DC</div>
+        <div class="node" data-target="games">GAMES</div>
+        <div class="node" data-target="steam">STEAM</div>
+        <div class="node" data-target="tiktok">TT</div>
     </div>
 
     <!-- Окно информации -->
     <div id="info-panel">
         <h2 id="info-title">Title</h2>
-        <p id="info-desc">Description</p>
+        <div id="info-desc">Description</div>
+        <div id="info-actions"></div>
         <button id="close-info" onclick="closeInfo()">[ CLOSE ]</button>
     </div>
 
-    <!-- Пиксельный кот -->
     <div id="pixel-cat" onmouseenter="catMeow(this)" onmouseleave="catIdle(this)">
 /\_/\
 ( o.o )
  > ^ <
     </div>
 
-    <!-- Аудио виджет -->
-    <div id="audio-widget">
-        <div class="bars">
-            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        </div>
-        <div class="track-info">MUSIC OFFLINE</div>
-    </div>
-
     <script>
-        /* 1. ЛОГИКА ИНТРО */
+        /* 1. АНИМАЦИЯ НАЗВАНИЯ ВКЛАДКИ */
+        const titleFrames = ["!", "! 𝑺", "! 𝑺𝑬", "! 𝑺𝑬𝑵", "! 𝑺𝑬𝑵𝑺", "! 𝑺𝑬𝑵𝑺𝑬", "! 𝑺𝑬𝑵𝑺𝑬𝑫", "! 𝑺𝑬𝑵𝑺𝑬", "! 𝑺𝑬𝑵𝑺", "! 𝑺𝑬𝑵", "! 𝑺𝑬", "! 𝑺", "!"];
+        let currentTitleFrame = 0;
+        let isTitleDeleting = false;
+
+        function animateBrowserTitle() {
+            document.title = titleFrames[currentTitleFrame];
+            let speed = 250;
+            if (!isTitleDeleting) {
+                if (currentTitleFrame === 6) { isTitleDeleting = true; speed = 2000; } 
+                else { currentTitleFrame++; }
+            } else {
+                if (currentTitleFrame === 12) { isTitleDeleting = false; speed = 500; currentTitleFrame = 0; } 
+                else { currentTitleFrame++; }
+            }
+            setTimeout(animateBrowserTitle, speed);
+        }
+        animateBrowserTitle();
+
+        /* 2. ИНТРО */
         const video = document.getElementById('intro-video');
         const enterBtn = document.getElementById('enter-btn');
         
@@ -210,31 +260,32 @@
             document.body.classList.add('site-opened');
             setTimeout(() => {
                 document.getElementById('intro-screen').style.display = 'none';
-                // Запускаем анимацию лепестков только после закрытия интро
                 initParticles();
             }, 1500);
         });
 
-        /* 2. ИНТЕРАКТИВНЫЕ ЛЕПЕСТКИ НА CANVAS */
+        /* 3. ЛЕПЕСТКИ НА ФОНЕ */
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
         let width, height;
-        let particles = [];
+        let petals = [];
         let mouse = { x: -1000, y: -1000 };
 
         function initParticles() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
             
-            particles = [];
-            for(let i = 0; i < 100; i++) {
-                particles.push({
+            petals = [];
+            for(let i = 0; i < 60; i++) {
+                petals.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    size: Math.random() * 3 + 1,
-                    speedX: Math.random() * 1 - 0.5,
-                    speedY: Math.random() * -1 - 0.5,
-                    color: `rgba(255, 107, 158, ${Math.random() * 0.5 + 0.1})`
+                    size: Math.random() * 6 + 4,
+                    speedX: Math.random() * 1.5 - 0.75,
+                    speedY: Math.random() * 1.5 + 0.5, // Падают вниз
+                    rotation: Math.random() * 360,
+                    rotSpeed: Math.random() * 2 - 1,
+                    color: `rgba(255, 107, 158, ${Math.random() * 0.4 + 0.1})`
                 });
             }
             animate();
@@ -245,113 +296,187 @@
             mouse.y = e.clientY;
         });
 
+        function drawPetalShape(ctx, size) {
+            // Рисуем лепесток сакуры
+            ctx.beginPath();
+            ctx.moveTo(0, -size);
+            ctx.bezierCurveTo(size, -size, size, size, 0, size);
+            ctx.bezierCurveTo(-size, size, -size, -size, 0, -size);
+            ctx.fill();
+        }
+
         function animate() {
             ctx.clearRect(0, 0, width, height);
             
-            particles.forEach(p => {
+            petals.forEach(p => {
                 // Движение
                 p.x += p.speedX;
                 p.y += p.speedY;
+                p.rotation += p.rotSpeed;
 
                 // Отталкивание от мыши
                 let dx = mouse.x - p.x;
                 let dy = mouse.y - p.y;
                 let dist = Math.sqrt(dx*dx + dy*dy);
-                if(dist < 150) {
-                    p.x -= dx * 0.02;
-                    p.y -= dy * 0.02;
+                if(dist < 120) {
+                    p.x -= dx * 0.05;
+                    p.y -= dy * 0.05;
                 }
 
-                // Респавн
-                if(p.y < -10 || p.x < -10 || p.x > width + 10) {
-                    p.y = height + 10;
+                // Респавн (сверху)
+                if(p.y > height + 20 || p.x < -20 || p.x > width + 20) {
+                    p.y = -20;
                     p.x = Math.random() * width;
                 }
 
                 // Рисование
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation * Math.PI / 180);
                 ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
+                drawPetalShape(ctx, p.size);
+                ctx.restore();
             });
             requestAnimationFrame(animate);
         }
 
-        /* 3. ВЗРЫВ СЕМЕНИ И ОРБИТА */
-        const core = document.getElementById('core-seed');
+        /* 4. ХАОТИЧНЫЕ ОРБИТЫ */
+        const nodes = document.querySelectorAll('.node');
+        
+        // Настраиваем параметры для каждого узла (разные скорости, радиусы, фазы)
+        const nodeParams = [];
+        nodes.forEach((node, i) => {
+            nodeParams.push({
+                el: node,
+                baseRadius: 140 + Math.random() * 80, // Разная дистанция
+                speed: (Math.random() * 0.5 + 0.5) * (Math.random() > 0.5 ? 1 : -1), // Разное направление
+                offset: Math.random() * Math.PI * 2,
+                wobbleSpeed: Math.random() * 2 + 1,
+                wobbleAmp: Math.random() * 30 + 10 // Амплитуда хаоса
+            });
+        });
+
+        let time = 0;
+        function animateOrbits() {
+            if(document.body.classList.contains('bloomed')) {
+                time += 0.005;
+                nodeParams.forEach(p => {
+                    // Вычисляем хаотичный радиус (пульсация)
+                    let currentRadius = p.baseRadius + Math.sin(time * p.wobbleSpeed + p.offset) * p.wobbleAmp;
+                    // Вычисляем угол
+                    let angle = time * p.speed + p.offset;
+                    
+                    // Позиция
+                    let x = Math.cos(angle) * currentRadius;
+                    let y = Math.sin(angle) * currentRadius;
+
+                    // Двигаем узел. Текст внутри всегда ровный, т.к. мы двигаем сам div, а не контейнер
+                    p.el.style.transform = `translate(${x}px, ${y}px)`;
+                });
+            }
+            requestAnimationFrame(animateOrbits);
+        }
+        animateOrbits();
+
+        /* 5. ВЗРЫВ ЦВЕТКА */
+        const core = document.getElementById('core-flower');
         core.addEventListener('click', () => {
             document.body.classList.add('bloomed');
-            // Эффект взрыва (упрощенный)
-            for(let i=0; i<50; i++) {
+            for(let i=0; i<60; i++) {
                 let particle = document.createElement('div');
                 particle.style.position = 'fixed';
-                particle.style.left = '50%';
-                particle.style.top = '50%';
-                particle.style.width = '4px';
-                particle.style.height = '4px';
+                particle.style.left = '50%'; particle.style.top = '50%';
+                particle.style.width = '4px'; particle.style.height = '8px';
                 particle.style.background = '#ff6b9e';
                 particle.style.borderRadius = '50%';
-                particle.style.pointerEvents = 'none';
-                particle.style.zIndex = '99';
+                particle.style.pointerEvents = 'none'; particle.style.zIndex = '99';
                 document.body.appendChild(particle);
 
                 let angle = Math.random() * Math.PI * 2;
-                let dist = Math.random() * 200 + 50;
+                let dist = Math.random() * 250 + 50;
                 let tx = Math.cos(angle) * dist;
                 let ty = Math.sin(angle) * dist;
 
                 particle.animate([
                     { transform: `translate(-50%, -50%) scale(1)`, opacity: 1 },
-                    { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0)`, opacity: 0 }
+                    { transform: `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(0) rotate(${Math.random()*360}deg)`, opacity: 0 }
                 ], { duration: 1000, easing: 'cubic-bezier(0.1, 0.8, 0.2, 1)' }).onfinish = () => particle.remove();
             }
         });
 
-        // Вращение орбиты
-        let angle = 0;
-        function rotateOrbit() {
-            if(document.body.classList.contains('bloomed')) {
-                angle += 0.002;
-                document.getElementById('orbit-system').style.transform = `translate(-50%, -50%) rotate(${angle}rad)`;
-                // Чтобы текст не переворачивался, отменяем вращение внутри узлов
-                document.querySelectorAll('.node').forEach(node => {
-                    // Примечание: тут мы фиксируем расположение узлов в CSS, 
-                    // поэтому вращение работает только для самого контейнера.
-                    // В идеале нужно использовать JS для вычисления позиций, 
-                    // но для простоты мы оставим статичные координаты и просто 
-                    // добавим пульсацию.
-                });
-            }
-            requestAnimationFrame(rotateOrbit);
-        }
-        rotateOrbit();
-
-        /* 4. ИНФО-ПАНЕЛЬ */
+        /* 6. ЛОГИКА МОДАЛЬНЫХ ОКОН */
         const infoData = {
-            'me': { title: 'Ворсинка (Денис)', desc: '16 лет. Исследую цифровое пространство. Люблю игры, хорошую музыку и минимализм.' },
-            'tg': { title: 'Telegram', desc: '@DaYliti\n\nНажми, чтобы скопировать.', link: 'https://t.me/DaYliti' },
-            'dc': { title: 'Discord', desc: 'vvariozunf\n\nНажми, чтобы скопировать.' },
-            'games': { title: 'Games', desc: 'Valorant\nRoblox\nArknights: Endfield\nR.E.P.O.\nHonkai: Star Rail' },
-            'steam': { title: 'Steam', desc: 'DaYliti\n\nНажми, чтобы перейти в профиль.', link: 'https://steamcommunity.com/profiles/76561199741654298/' },
-            'tiktok': { title: 'TikTok', desc: '@dayliti\n\nНажми, чтобы перейти.', link: 'https://www.tiktok.com/@dayliti' }
+            'me': { 
+                title: 'Info', 
+                desc: 'Age group: 16-17\n\nJust existing in my own world. Welcome.', 
+                actions: [] 
+            },
+            'tg': { 
+                title: 'Telegram', 
+                desc: '@DaYliti', 
+                copyText: '@DaYliti',
+                link: 'https://t.me/DaYliti',
+                linkText: 'Go to Telegram'
+            },
+            'dc': { 
+                title: 'Discord', 
+                desc: 'vvariozunf', 
+                copyText: 'vvariozunf',
+                actions: []
+            },
+            'games': { 
+                title: 'Games', 
+                desc: 'Valorant\nRoblox\nArknights: Endfield\nR.E.P.O.\nHonkai: Star Rail', 
+                actions: [] 
+            },
+            'steam': { 
+                title: 'Steam', 
+                desc: 'DaYliti', 
+                link: 'https://steamcommunity.com/profiles/76561199741654298/',
+                linkText: 'Go to Steam'
+            },
+            'tiktok': { 
+                title: 'TikTok', 
+                desc: '@dayliti', 
+                link: 'https://www.tiktok.com/@dayliti',
+                linkText: 'Go to TikTok'
+            }
         };
 
         function showInfo(key) {
             const panel = document.getElementById('info-panel');
             const title = document.getElementById('info-title');
             const desc = document.getElementById('info-desc');
+            const actionsContainer = document.getElementById('info-actions');
             const data = infoData[key];
 
             title.innerText = data.title;
             desc.innerText = data.desc;
-            
-            // Обработка копирования или перехода
-            desc.onclick = () => {
-                if(key === 'tg') { navigator.clipboard.writeText('@DaYliti'); desc.innerText = 'Скопировано!'; }
-                if(key === 'dc') { navigator.clipboard.writeText('vvariozunf'); desc.innerText = 'Скопировано!'; }
-                if(data.link) { window.open(data.link, '_blank'); }
-            };
-            desc.style.cursor = (data.link || key==='tg' || key==='dc') ? 'pointer' : 'default';
+            actionsContainer.innerHTML = ''; // Очищаем старые кнопки
+
+            // Добавляем кнопку копирования (если есть текст)
+            if (data.copyText) {
+                let copyBtn = document.createElement('button');
+                copyBtn.className = 'action-btn copy';
+                copyBtn.innerText = '[ Copy ]';
+                copyBtn.onclick = () => {
+                    navigator.clipboard.writeText(data.copyText);
+                    let old = copyBtn.innerText;
+                    copyBtn.innerText = 'Copied!';
+                    setTimeout(() => copyBtn.innerText = old, 1500);
+                };
+                actionsContainer.appendChild(copyBtn);
+            }
+
+            // Добавляем кнопку перехода (если есть ссылка)
+            if (data.link) {
+                let linkBtn = document.createElement('a');
+                linkBtn.className = 'action-btn';
+                linkBtn.innerText = `[ ${data.linkText} ]`;
+                linkBtn.href = data.link;
+                linkBtn.target = '_blank';
+                actionsContainer.appendChild(linkBtn);
+            }
 
             panel.classList.add('active');
         }
@@ -360,7 +485,14 @@
             document.getElementById('info-panel').classList.remove('active');
         }
 
-        /* 5. ПИКСЕЛЬНЫЙ КОТ */
+        // Привязка кликов к узлам
+        nodes.forEach(node => {
+            node.addEventListener('click', (e) => {
+                showInfo(e.target.getAttribute('data-target'));
+            });
+        });
+
+        /* 7. ПИКСЕЛЬНЫЙ КОТ */
         function catMeow(el) {
             el.innerText = "/\\_/\\\n( ^.^ )\n > ^ <\nМяу!";
             el.style.color = "#ff6b9e";
@@ -370,14 +502,15 @@
             el.style.color = "#555";
         }
 
-        /* 6. АНИМАЦИЯ ЭКВАЛАЙЗЕРА */
-        const bars = document.querySelectorAll('.bar');
-        setInterval(() => {
-            bars.forEach(bar => {
-                bar.style.height = Math.random() * 20 + 3 + 'px';
-            });
-        }, 150);
-
+        /* 8. КЛИК В ПУСТОТУ ЗАКРЫВАЕТ ОКНО */
+        window.addEventListener('click', (e) => {
+            const panel = document.getElementById('info-panel');
+            if (panel.classList.contains('active') && 
+                !panel.contains(e.target) && 
+                !e.target.classList.contains('node')) {
+                closeInfo();
+            }
+        });
     </script>
 </body>
 </html>
