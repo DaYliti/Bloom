@@ -45,27 +45,28 @@
 
   #open{
     appearance:none;
-    background:rgba(255,80,140,.03);
-    color:#ffd9e4;
-    border:1px solid rgba(255,120,160,.35);
-    border-radius:999px;
-    padding:15px 46px;
+    background:rgba(255,255,255,.02);
+    color:rgba(255,255,255,.85);
+    border:1px solid rgba(255,255,255,.3);
+    border-radius:8px; /* Вот тут мы делаем ее прямоугольной с легким скруглением */
+    padding:16px 50px;
     font:inherit;
     font-size:13px;
-    letter-spacing:.42em;
+    letter-spacing:.4em;
     text-transform:uppercase;
     cursor:pointer;
-    transition:all .45s cubic-bezier(.2,.8,.2,1);
-    box-shadow:0 0 34px rgba(255,80,140,.12), inset 0 0 22px rgba(255,80,140,.05);
-    backdrop-filter:blur(3px);
+    transition:all .4s ease;
+    box-shadow:0 0 20px rgba(255,255,255,.05);
+    backdrop-filter:blur(4px);
   }
+  
   #open:hover, #open:focus-visible{
     outline:none;
-    color:#fff;
-    border-color:rgba(255,160,195,.9);
-    letter-spacing:.55em;
-    background:rgba(255,80,140,.07);
-    box-shadow:0 0 60px rgba(255,80,140,.4), inset 0 0 34px rgba(255,80,140,.13);
+    color:#000; /* Текст станет черным при наведении для контраста */
+    background:rgba(255,255,255,.95); /* Кнопка зальется белым */
+    border-color:#fff;
+    letter-spacing:.45em; /* Текст чуть расширится */
+    box-shadow:0 0 30px rgba(255,255,255,.3);
   }
 
   /* ---------- Био ---------- */
